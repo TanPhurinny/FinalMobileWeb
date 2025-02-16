@@ -3,29 +3,181 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test login</title>
+    <title>Vue 3 + Firebase</title>
 
-    <!-- React และ ReactDOM -->
-    <script src="https://cdn.jsdelivr.net/npm/react/umd/react.production.min.js" crossorigin></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      crossorigin="anonymous"
-    />
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
   </head>
   <body>
-    <div id="myapp" class="container p-4"></div>
+    <div id="app" class="container p-4"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/react-bootstrap@next/dist/react-bootstrap.min.js" crossorigin></script>
+    <script>
+      const { createApp, ref, onMounted } = Vue;
 
-    <script type="text/babel" src="index.js"></script>
+      // 🔥 Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
+        authDomain: "finalmobileweb.firebaseapp.com",
+        projectId: "finalmobileweb",
+        storageBucket: "finalmobileweb.firebasestorage.app",
+        messagingSenderId: "763318502667",
+        appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
+        measurementId: "G-LSNZG1BMNT"
+      };
+
+      // 🔥 Firebase Initialization
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const firestore = firebase.firestore();
+
+      createApp({
+        setup() {
+          const user = ref(null);
+          const className = ref("");
+          const classCode = ref("");
+          const classRoom = ref("");
+          const classPhoto = ref("");
+
+          /** 🔥 บันทึกข้อมูลผู้ใช้ลง Firestore */
+          async function saveUserToFirestore(user) {
+            if (!user) return;
+            const userRef = firestore.collection("users").doc(user.uid);
+            const userSnapshot = await userRef.get();
+
+            if (!userSnapshot.exists) {
+              await userRef.set({
+                name: user.displayName,
+                email: user.email,
+                photo: user.photoURL
+              });
+
+              console.log("✅ บันทึกข้อมูลผู้ใช้ใหม่ลง Firestore");
+            }
+          }
+
+          /** 🔥 สร้างห้องเรียน */
+          async function createClassroom() {
+            if (!user.value) return;
+
+            const classRef = firestore.collection("classroom").doc();
+            await classRef.set({
+              owner: user.value.uid,
+              info: {
+                code: classCode.value,
+                name: className.value,
+                photo: classPhoto.value,
+                room: classRoom.value
+              }
+            });
+
+            console.log(`✅ สร้างห้องเรียน ${className.value} สำเร็จ`);
+
+            // เพิ่มข้อมูลห้องเรียนลงใน /users/{uid}/classroom/{cid}
+            const userClassRef = firestore.collection("users").doc(user.value.uid).collection("classroom").doc(classRef.id);
+            await userClassRef.set({
+              status: 1 // 1 = อาจารย์
+            });
+
+            console.log(`✅ เพิ่มห้องเรียน ${className.value} ให้ผู้ใช้ ${user.value.uid}`);
+          }
+
+          /** 🔥 Login ด้วย Google */
+          async function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+              const result = await auth.signInWithPopup(provider);
+              user.value = result.user;
+              await saveUserToFirestore(user.value);
+            } catch (error) {
+              console.error("🚨 Google Sign-in Error:", error);
+            }
+          }
+
+          /** 🔥 Logout */
+          async function signOut() {
+            try {
+              await auth.signOut();
+              user.value = null;
+            } catch (error) {
+              console.error("🚨 Sign-out Error:", error);
+            }
+          }
+
+          onMounted(() => {
+            auth.onAuthStateChanged(async (loggedUser) => {
+              if (loggedUser) {
+                user.value = loggedUser;
+                await saveUserToFirestore(user.value);
+              } else {
+                user.value = null;
+              }
+            });
+          });
+
+          return {
+            user,
+            className,
+            classCode,
+            classRoom,
+            classPhoto,
+            signInWithGoogle,
+            signOut,
+            createClassroom
+          };
+        },
+        template: `
+          <div class="card">
+            <div class="card-header">
+              <div class="alert alert-info text-center">
+                <b>ระบบจัดการห้องเรียน</b>
+              </div>
+            </div>
+
+            <div class="card-body text-center">
+              <div v-if="user">
+                <img :src="user.photoURL" class="rounded-circle" width="100" height="100" />
+                <h4 class="mt-2">{{ user.displayName }}</h4>
+                <p>{{ user.email }}</p>
+                <button class="btn btn-danger" @click="signOut">Sign Out</button>
+
+                <h5 class="mt-4">สร้างห้องเรียน</h5>
+                <form>
+                  <div class="mb-2">
+                    <input type="text" class="form-control" v-model="className" placeholder="ชื่อวิชา" />
+                  </div>
+                  <div class="mb-2">
+                    <input type="text" class="form-control" v-model="classCode" placeholder="รหัสวิชา" />
+                  </div>
+                  <div class="mb-2">
+                    <input type="text" class="form-control" v-model="classRoom" placeholder="ห้องเรียน" />
+                  </div>
+                  <div class="mb-2">
+                    <input type="text" class="form-control" v-model="classPhoto" placeholder="URL รูปภาพ" />
+                  </div>
+                  <button type="button" class="btn btn-success mt-2" @click="createClassroom">
+                    สร้างห้องเรียน
+                  </button>
+                </form>
+              </div>
+              <button v-else class="btn btn-primary" @click="signInWithGoogle">
+                Sign in with Google
+              </button>
+            </div>
+
+            <div class="card-footer text-center">
+              College of Computing, Khon Kaen University
+            </div>
+          </div>
+        `
+      }).mount("#app");
+    </script>
   </body>
 </html>
