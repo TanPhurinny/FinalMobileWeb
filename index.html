@@ -49,6 +49,22 @@
         const classRoom = ref("");
         const classPhoto = ref("");
 
+        /** 🔥 บันทึกข้อมูลผู้ใช้ลง Firestore */
+        async function saveUserToFirestore(user) {
+          if (!user) return;
+          const userRef = firestore.collection("users").doc(user.uid);
+          const userSnapshot = await userRef.get();
+
+          if (!userSnapshot.exists) {
+            await userRef.set({
+              name: user.displayName,
+              email: user.email,
+              photo: user.photoURL
+            });
+            console.log("✅ บันทึกข้อมูลผู้ใช้ใหม่ลง Firestore");
+          }
+        }
+
         /** 🔥 ดึงข้อมูลห้องเรียนของผู้ใช้ */
         async function fetchClassrooms() {
           if (!user.value) return;
@@ -64,8 +80,6 @@
           }
 
           console.log("✅ เริ่มสร้างห้องเรียน...");
-          console.log("📌 ข้อมูลที่ส่งไป:", classCode.value, className.value, classRoom.value, classPhoto.value);
-
           const classRef = firestore.collection("users").doc(user.value.uid).collection("classroom").doc();
           await classRef.set({
             owner: user.value.uid,
@@ -99,6 +113,10 @@
           try {
             const result = await auth.signInWithPopup(provider);
             user.value = result.user;
+
+            // ✅ บันทึกข้อมูลผู้ใช้ลง Firestore หลังจาก Login
+            await saveUserToFirestore(user.value);
+
             await fetchClassrooms();
           } catch (error) {
             console.error("🚨 Google Sign-in Error:", error);
@@ -120,6 +138,10 @@
           auth.onAuthStateChanged(async (loggedUser) => {
             if (loggedUser) {
               user.value = loggedUser;
+
+              // ✅ บันทึกข้อมูลผู้ใช้ลง Firestore เมื่อผู้ใช้ Login
+              await saveUserToFirestore(loggedUser);
+              
               await fetchClassrooms();
             } else {
               user.value = null;
