@@ -3,83 +3,187 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Google Classroom Clone</title>
+  <title>ระบบจัดการห้องเรียนออนไลน์</title>
 
-  <!-- Vue 3 CDN -->
+  <!-- Vue 3 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   
-  <!-- Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- QRCode.js -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <style>
+    #qrcode {
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .profile-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .create-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
 </head>
 <body>
   <div id="app" class="container py-4">
-    <div class="text-center" v-if="!user">
-      <button class="btn btn-primary btn-lg" @click="signInWithGoogle">🔑 ลงชื่อเข้าใช้ด้วย Google</button>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
+        </a>
+        <div v-if="user" class="d-flex align-items-center">
+          <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
+          <span class="me-3">{{ userName }}</span>
+          <button class="btn btn-outline-danger" @click="signOut">
+            <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div v-if="!user" class="text-center">
+      <h2 class="mb-4">ยินดีต้อนรับสู่ระบบจัดการห้องเรียนออนไลน์</h2>
+      <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
+        <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
+      </button>
     </div>
 
+    <!-- Main Content -->
     <div v-else>
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>📚 ห้องเรียนของฉัน</h3>
-        <button class="btn btn-danger" @click="signOut">🚪 ออกจากระบบ</button>
-      </div>
-
-      <div class="text-center mb-3">
-        <button class="btn btn-info" @click="showProfile = !showProfile">👤 โปรไฟล์ของฉัน</button>
-      </div>
-
-      <!-- โปรไฟล์ผู้ใช้ -->
-      <div v-if="showProfile" class="card mx-auto p-3 mb-4" style="max-width: 400px;">
-        <h5 class="text-center">ข้อมูลผู้ใช้</h5>
-        <div class="text-center">
-          <img :src="userPhoto" class="rounded-circle mb-3" width="100" height="100" v-if="userPhoto"/>
+      <div v-if="!currentClassroomId">
+        <!-- Profile Section -->
+        <div v-if="showProfile" class="profile-section">
+          <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
+          <div class="row">
+            <div class="col-md-4 text-center">
+              <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">ชื่อผู้ใช้</label>
+                <input type="text" v-model="userName" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">URL รูปโปรไฟล์</label>
+                <input type="text" v-model="userPhoto" class="form-control">
+              </div>
+              <button class="btn btn-success" @click="updateProfile">
+                <i class="fas fa-save"></i> บันทึกข้อมูล
+              </button>
+            </div>
+          </div>
         </div>
-        <label><b>ชื่อ:</b></label>
-        <input type="text" v-model="userName" class="form-control mb-2"/>
-        
-        <label><b>อีเมล:</b></label>
-        <p class="form-control bg-light">{{ user.email }}</p>
 
-        <label><b>URL รูปภาพ:</b></label>
-        <input type="text" v-model="userPhoto" class="form-control mb-3"/>
+        <!-- Action Buttons -->
+        <div class="text-center mb-4">
+          <button class="btn btn-info me-2" @click="showProfile = !showProfile">
+            <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
+          </button>
+          <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
+            <i class="fas fa-plus"></i> สร้างห้องเรียน
+          </button>
+        </div>
 
-        <button class="btn btn-success w-100" @click="updateProfile">💾 บันทึกข้อมูล</button>
-      </div>
+        <!-- Create Classroom Form -->
+        <div v-if="showCreateForm" class="create-form card p-4 mb-4">
+          <h4 class="text-center mb-3">สร้างห้องเรียนใหม่</h4>
+          <div class="mb-3">
+            <label class="form-label">รหัสวิชา</label>
+            <input type="text" class="form-control" v-model="classCode">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ชื่อวิชา</label>
+            <input type="text" class="form-control" v-model="className">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">URL รูปภาพ</label>
+            <input type="text" class="form-control" v-model="classPhoto">
+          </div>
+          <button class="btn btn-success w-100" @click="createClassroom">
+            <i class="fas fa-plus-circle"></i> สร้างห้องเรียน
+          </button>
+        </div>
 
-      <!-- ปุ่มสร้างห้องเรียน -->
-      <div class="text-center mb-3">
-        <button class="btn btn-primary btn-lg" @click="showCreateForm = !showCreateForm">➕ สร้างห้องเรียน</button>
-      </div>
-
-      <!-- ฟอร์มสร้างห้องเรียน -->
-      <div v-if="showCreateForm" class="card mx-auto p-3 mb-4" style="max-width: 500px;">
-        <h5 class="text-center">📌 สร้างห้องเรียน</h5>
-        <input type="text" class="form-control mb-2" v-model="classCode" placeholder="รหัสห้องเรียน" />
-        <input type="text" class="form-control mb-2" v-model="className" placeholder="ชื่อวิชา" />
-        <input type="text" class="form-control mb-3" v-model="classPhoto" placeholder="URL รูปภาพห้องเรียน" />
-        <button class="btn btn-success w-100" @click="createClassroom">✅ สร้าง</button>
-      </div>
-
-      <!-- รายการห้องเรียน -->
-      <div class="row">
-        <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
-          <div class="card shadow-sm">
-            <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" class="card-img-top" height="150"/>
-            <div class="card-body">
-              <h5 class="card-title text-center">{{ classroom.info.name }}</h5>
-              <p class="card-text text-center">รหัส: {{ classroom.info.code }}</p>
-              <div class="text-center">
-                <button class="btn btn-danger btn-sm" @click="deleteClassroom(classroom.id)">🗑️ ลบ</button>
+        <!-- Classrooms Grid -->
+        <div class="row">
+          <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
+            <div class="card" @click="viewClassroom(classroom.id)">
+              <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" 
+                   class="card-img-top" alt="classroom image" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <h5 class="card-title">{{ classroom.info.name }}</h5>
+                <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Classroom Detail -->
+      <div v-else>
+        <button class="btn btn-secondary mb-3" @click="backToHome">
+          <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+        </button>
+        <div class="card">
+          <div class="card-body">
+            <h4>{{ currentClassroom.info.name }}</h4>
+            <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
+            <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" 
+                 v-if="currentClassroom.info.photo">
+            <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
+              <i class="fas fa-qrcode"></i> แสดง QR Code
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal fade" id="qrCodeModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">QR Code สำหรับลงทะเบียน</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <div id="qrcode"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-success" @click="downloadQRCode">
+              <i class="fas fa-download"></i> ดาวน์โหลด QR Code
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -90,7 +194,7 @@
       apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
       authDomain: "finalmobileweb.firebaseapp.com",
       projectId: "finalmobileweb",
-      storageBucket: "finalmobileweb.appspot.com",
+      storageBucket: "finalmobileweb.firebasestorage.app",
       messagingSenderId: "763318502667",
       appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
       measurementId: "G-LSNZG1BMNT"
@@ -108,26 +212,23 @@
         const classrooms = ref([]);
         const showCreateForm = ref(false);
         const showProfile = ref(false);
-        
         const classCode = ref("");
         const className = ref("");
         const classPhoto = ref("");
+        const currentClassroomId = ref(null);
+        const currentClassroom = ref(null);
 
         async function fetchClassrooms() {
           if (!user.value) return;
-          const querySnapshot = await firestore.collection("users").doc(user.value.uid).collection("classroom").get();
+          const querySnapshot = await firestore.collection("users").doc(user.value.uid)
+            .collection("classroom").get();
           classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-
-        async function deleteClassroom(classroomId) {
-          if (!user.value) return;
-          await firestore.collection("users").doc(user.value.uid).collection("classroom").doc(classroomId).delete();
-          fetchClassrooms();
         }
 
         async function createClassroom() {
           if (!user.value) return;
-          const classRef = firestore.collection("users").doc(user.value.uid).collection("classroom").doc();
+          const classRef = firestore.collection("users").doc(user.value.uid)
+            .collection("classroom").doc();
           await classRef.set({
             owner: user.value.uid,
             info: {
@@ -142,38 +243,77 @@
 
         async function signInWithGoogle() {
           const provider = new firebase.auth.GoogleAuthProvider();
-          auth.signInWithPopup(provider).then((result) => {
+          try {
+            const result = await auth.signInWithPopup(provider);
             user.value = result.user;
             userName.value = result.user.displayName;
             userPhoto.value = result.user.photoURL;
-            fetchClassrooms();
-          }).catch((error) => {
+            await fetchClassrooms();
+          } catch (error) {
             console.error("Google Sign-in Error:", error);
-          });
+          }
         }
 
         async function signOut() {
           await auth.signOut();
           user.value = null;
           classrooms.value = [];
+          currentClassroomId.value = null;
+          currentClassroom.value = null;
         }
 
         async function updateProfile() {
           if (!user.value) return;
-
           try {
             await user.value.updateProfile({
               displayName: userName.value,
               photoURL: userPhoto.value
             });
-
-            user.value.displayName = userName.value;
-            user.value.photoURL = userPhoto.value;
-
-            alert("อัปเดตโปรไฟล์สำเร็จ ✅");
+            alert("อัปเดตโปรไฟล์สำเร็จ");
           } catch (error) {
-            alert("เกิดข้อผิดพลาด ❌");
+            alert("เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์");
           }
+        }
+
+        async function showQRCode(classroomId) {
+          const qrCodeElement = document.getElementById("qrcode");
+          qrCodeElement.innerHTML = "";
+
+          const qrData = JSON.stringify({
+            classroomId: classroomId,
+            className: currentClassroom.value.info.name,
+            classCode: currentClassroom.value.info.code
+          });
+
+          new QRCode(qrCodeElement, {
+            text: qrData,
+            width: 200,
+            height: 200,
+          });
+
+          const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+          modal.show();
+        }
+
+        function downloadQRCode() {
+          const canvas = document.querySelector("#qrcode canvas");
+          const image = canvas.toDataURL("image/png");
+          const link = document.createElement('a');
+          link.download = `qrcode-${currentClassroom.value.info.code}.png`;
+          link.href = image;
+          link.click();
+        }
+
+        async function viewClassroom(classroomId) {
+          currentClassroomId.value = classroomId;
+          const doc = await firestore.collection("users").doc(user.value.uid)
+            .collection("classroom").doc(classroomId).get();
+          currentClassroom.value = doc.data();
+        }
+
+        function backToHome() {
+          currentClassroomId.value = null;
+          currentClassroom.value = null;
         }
 
         onMounted(() => {
@@ -187,11 +327,29 @@
           });
         });
 
-        return { user, userName, userPhoto, classrooms, showCreateForm, showProfile, classCode, className, classPhoto, signInWithGoogle, signOut, createClassroom, deleteClassroom, updateProfile };
+        return {
+          user,
+          userName,
+          userPhoto,
+          classrooms,
+          showCreateForm,
+          showProfile,
+          classCode,
+          className,
+          classPhoto,
+          currentClassroomId,
+          currentClassroom,
+          signInWithGoogle,
+          signOut,
+          createClassroom,
+          updateProfile,
+          showQRCode,
+          downloadQRCode,
+          viewClassroom,
+          backToHome,
+        };
       }
     }).mount("#app");
-    
   </script>
-  
 </body>
 </html>
