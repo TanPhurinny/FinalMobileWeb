@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ระบบจัดการห้องเรียน</title>
+  <title>Google Classroom Clone</title>
 
   <!-- Vue 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
+  
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -17,23 +17,85 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 </head>
 <body>
-  <div id="app" class="container p-4"></div>
+  <div id="app" class="container py-4">
+    <div class="text-center" v-if="!user">
+      <button class="btn btn-primary btn-lg" @click="signInWithGoogle">🔑 ลงชื่อเข้าใช้ด้วย Google</button>
+    </div>
+
+    <div v-else>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📚 ห้องเรียนของฉัน</h3>
+        <button class="btn btn-danger" @click="signOut">🚪 ออกจากระบบ</button>
+      </div>
+
+      <div class="text-center mb-3">
+        <button class="btn btn-info" @click="showProfile = !showProfile">👤 โปรไฟล์ของฉัน</button>
+      </div>
+
+      <!-- โปรไฟล์ผู้ใช้ -->
+      <div v-if="showProfile" class="card mx-auto p-3 mb-4" style="max-width: 400px;">
+        <h5 class="text-center">ข้อมูลผู้ใช้</h5>
+        <div class="text-center">
+          <img :src="userPhoto" class="rounded-circle mb-3" width="100" height="100" v-if="userPhoto"/>
+        </div>
+        <label><b>ชื่อ:</b></label>
+        <input type="text" v-model="userName" class="form-control mb-2"/>
+        
+        <label><b>อีเมล:</b></label>
+        <p class="form-control bg-light">{{ user.email }}</p>
+
+        <label><b>URL รูปภาพ:</b></label>
+        <input type="text" v-model="userPhoto" class="form-control mb-3"/>
+
+        <button class="btn btn-success w-100" @click="updateProfile">💾 บันทึกข้อมูล</button>
+      </div>
+
+      <!-- ปุ่มสร้างห้องเรียน -->
+      <div class="text-center mb-3">
+        <button class="btn btn-primary btn-lg" @click="showCreateForm = !showCreateForm">➕ สร้างห้องเรียน</button>
+      </div>
+
+      <!-- ฟอร์มสร้างห้องเรียน -->
+      <div v-if="showCreateForm" class="card mx-auto p-3 mb-4" style="max-width: 500px;">
+        <h5 class="text-center">📌 สร้างห้องเรียน</h5>
+        <input type="text" class="form-control mb-2" v-model="classCode" placeholder="รหัสห้องเรียน" />
+        <input type="text" class="form-control mb-2" v-model="className" placeholder="ชื่อวิชา" />
+        <input type="text" class="form-control mb-3" v-model="classPhoto" placeholder="URL รูปภาพห้องเรียน" />
+        <button class="btn btn-success w-100" @click="createClassroom">✅ สร้าง</button>
+      </div>
+
+      <!-- รายการห้องเรียน -->
+      <div class="row">
+        <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
+          <div class="card shadow-sm">
+            <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" class="card-img-top" height="150"/>
+            <div class="card-body">
+              <h5 class="card-title text-center">{{ classroom.info.name }}</h5>
+              <p class="card-text text-center">รหัส: {{ classroom.info.code }}</p>
+              <div class="text-center">
+                <button class="btn btn-danger btn-sm" @click="deleteClassroom(classroom.id)">🗑️ ลบ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <script>
     const { createApp, ref, onMounted } = Vue;
 
-    // 🔥 Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
       authDomain: "finalmobileweb.firebaseapp.com",
       projectId: "finalmobileweb",
-      storageBucket: "finalmobileweb.firebasestorage.app",
+      storageBucket: "finalmobileweb.appspot.com",
       messagingSenderId: "763318502667",
       appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
       measurementId: "G-LSNZG1BMNT"
     };
 
-    // 🔥 Firebase Initialization
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const firestore = firebase.firestore();
@@ -41,167 +103,95 @@
     createApp({
       setup() {
         const user = ref(null);
+        const userName = ref("");
+        const userPhoto = ref("");
         const classrooms = ref([]);
-        const showForm = ref(false);
-
+        const showCreateForm = ref(false);
+        const showProfile = ref(false);
+        
         const classCode = ref("");
         const className = ref("");
-        const classRoom = ref("");
         const classPhoto = ref("");
 
-        /** 🔥 บันทึกข้อมูลผู้ใช้ลง Firestore */
-        async function saveUserToFirestore(user) {
-          if (!user) return;
-          const userRef = firestore.collection("users").doc(user.uid);
-          const userSnapshot = await userRef.get();
-
-          if (!userSnapshot.exists) {
-            await userRef.set({
-              name: user.displayName,
-              email: user.email,
-              photo: user.photoURL
-            });
-            console.log("✅ บันทึกข้อมูลผู้ใช้ใหม่ลง Firestore");
-          }
-        }
-
-        /** 🔥 ดึงข้อมูลห้องเรียนของผู้ใช้ */
         async function fetchClassrooms() {
           if (!user.value) return;
           const querySnapshot = await firestore.collection("users").doc(user.value.uid).collection("classroom").get();
           classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
-        /** 🔥 สร้างห้องเรียน */
-        async function createClassroom() {
-          if (!user.value) {
-            console.error("🚨 ไม่พบข้อมูลผู้ใช้ ฟังก์ชัน createClassroom() ไม่ทำงาน");
-            return;
-          }
+        async function deleteClassroom(classroomId) {
+          if (!user.value) return;
+          await firestore.collection("users").doc(user.value.uid).collection("classroom").doc(classroomId).delete();
+          fetchClassrooms();
+        }
 
-          console.log("✅ เริ่มสร้างห้องเรียน...");
+        async function createClassroom() {
+          if (!user.value) return;
           const classRef = firestore.collection("users").doc(user.value.uid).collection("classroom").doc();
           await classRef.set({
             owner: user.value.uid,
             info: {
               code: classCode.value,
               name: className.value,
-              room: classRoom.value,
               photo: classPhoto.value
             }
           });
-
-          console.log(`✅ สร้างห้องเรียน ${classRef.id} สำเร็จ`);
-          showForm.value = false;
+          showCreateForm.value = false;
           fetchClassrooms();
         }
 
-        /** 🔥 ลบห้องเรียน */
-        async function deleteClassroom(classroomId) {
-          if (!user.value) return;
-          const confirmDelete = confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบห้องเรียนนี้?");
-          if (!confirmDelete) return;
-
-          await firestore.collection("users").doc(user.value.uid).collection("classroom").doc(classroomId).delete();
-          console.log(`🗑️ ลบห้องเรียน ${classroomId} สำเร็จ`);
-          fetchClassrooms();
-        }
-
-        /** 🔥 Login ด้วย Google */
         async function signInWithGoogle() {
           const provider = new firebase.auth.GoogleAuthProvider();
-          try {
-            const result = await auth.signInWithPopup(provider);
+          auth.signInWithPopup(provider).then((result) => {
             user.value = result.user;
-
-            // ✅ บันทึกข้อมูลผู้ใช้ลง Firestore หลังจาก Login
-            await saveUserToFirestore(user.value);
-
-            await fetchClassrooms();
-          } catch (error) {
-            console.error("🚨 Google Sign-in Error:", error);
-          }
+            userName.value = result.user.displayName;
+            userPhoto.value = result.user.photoURL;
+            fetchClassrooms();
+          }).catch((error) => {
+            console.error("Google Sign-in Error:", error);
+          });
         }
 
-        /** 🔥 Logout */
         async function signOut() {
+          await auth.signOut();
+          user.value = null;
+          classrooms.value = [];
+        }
+
+        async function updateProfile() {
+          if (!user.value) return;
+
           try {
-            await auth.signOut();
-            user.value = null;
-            classrooms.value = [];
+            await user.value.updateProfile({
+              displayName: userName.value,
+              photoURL: userPhoto.value
+            });
+
+            user.value.displayName = userName.value;
+            user.value.photoURL = userPhoto.value;
+
+            alert("อัปเดตโปรไฟล์สำเร็จ ✅");
           } catch (error) {
-            console.error("🚨 Sign-out Error:", error);
+            alert("เกิดข้อผิดพลาด ❌");
           }
         }
 
         onMounted(() => {
           auth.onAuthStateChanged(async (loggedUser) => {
+            user.value = loggedUser;
             if (loggedUser) {
-              user.value = loggedUser;
-
-              // ✅ บันทึกข้อมูลผู้ใช้ลง Firestore เมื่อผู้ใช้ Login
-              await saveUserToFirestore(loggedUser);
-              
+              userName.value = loggedUser.displayName || "";
+              userPhoto.value = loggedUser.photoURL || "";
               await fetchClassrooms();
-            } else {
-              user.value = null;
             }
           });
         });
 
-        return {
-          user,
-          classrooms,
-          showForm,
-          classCode,
-          className,
-          classRoom,
-          classPhoto,
-          signInWithGoogle,
-          signOut,
-          createClassroom,
-          deleteClassroom
-        };
-      },
-      template: `
-        <div class="card">
-          <div class="card-header text-center">
-            <b>ระบบจัดการห้องเรียน</b>
-          </div>
-
-          <div class="card-body text-center">
-            <div v-if="user">
-              <img :src="user.photoURL" class="rounded-circle" width="100" height="100" />
-              <h4 class="mt-2">{{ user.displayName }}</h4>
-              <p>{{ user.email }}</p>
-              <button class="btn btn-danger mb-3" @click="signOut">Sign Out</button>
-
-              <h5 class="mt-4">ห้องเรียนของฉัน</h5>
-              <ul class="list-group">
-                <li v-for="classroom in classrooms" :key="classroom.id" class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <img :src="classroom.info.photo" class="rounded" width="50" height="50" v-if="classroom.info.photo"/>
-                    {{ classroom.info.name }} ({{ classroom.info.code }})
-                  </div>
-                  <button class="btn btn-danger btn-sm" @click="deleteClassroom(classroom.id)">🗑️ ลบ</button>
-                </li>
-              </ul>
-
-              <button class="btn btn-primary mt-3" @click="showForm = !showForm">สร้างห้องเรียน</button>
-
-              <div v-if="showForm" class="mt-3">
-                <input type="text" class="form-control mb-2" v-model="classCode" placeholder="รหัสวิชา" />
-                <input type="text" class="form-control mb-2" v-model="className" placeholder="ชื่อวิชา" />
-                <input type="text" class="form-control mb-2" v-model="classRoom" placeholder="ชื่อห้องเรียน" />
-                <input type="text" class="form-control mb-2" v-model="classPhoto" placeholder="URL รูปภาพ" />
-                <button class="btn btn-success" @click="createClassroom">สร้าง</button>
-              </div>
-            </div>
-            <button v-else class="btn btn-primary" @click="signInWithGoogle">Sign in with Google</button>
-          </div>
-        </div>
-      `
+        return { user, userName, userPhoto, classrooms, showCreateForm, showProfile, classCode, className, classPhoto, signInWithGoogle, signOut, createClassroom, deleteClassroom, updateProfile };
+      }
     }).mount("#app");
+    
   </script>
+  
 </body>
 </html>
