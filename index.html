@@ -9,57 +9,50 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <!-- Firebase -->
-    <script
-      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script
-      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script
-      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <!-- Bootstrap -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet">
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- QRCode.js -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
     <!-- Font Awesome -->
-    <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-    #qrcode {
-      padding: 20px;
-      background: white;
-      border-radius: 10px;
-      display: inline-block;
-    }
-    .card {
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-    }
-    .profile-section {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-    .create-form {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .logo{
-      width: 1200px;
-      height: auto;
-      margin-top: 50px;
-    }
-  </style>
+      #qrcode {
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        display: inline-block;
+      }
+      .card {
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      .profile-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+      .create-form {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .logo {
+        width: 1200px;
+        height: auto;
+        margin-top: 50px;
+      }
+    </style>
   </head>
   <body>
     <div id="app" class="container py-4">
@@ -70,8 +63,7 @@
             <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
           </a>
           <div v-if="user" class="d-flex align-items-center">
-            <img :src="userPhoto" class="rounded-circle me-2" width="32"
-              height="32" v-if="userPhoto">
+            <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
             <span class="me-3">{{ userName }}</span>
             <button class="btn btn-outline-danger" @click="signOut">
               <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
@@ -86,8 +78,7 @@
         <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
           <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
         </button>
-        <div ><img class="logo" src="./img/logocom.png" alt="logo"></div>
-        
+        <div><img class="logo" src="./img/logocom.png" alt="logo"></div>
       </div>
 
       <!-- Main Content -->
@@ -98,8 +89,7 @@
             <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
             <div class="row">
               <div class="col-md-4 text-center">
-                <img :src="userPhoto" class="rounded-circle mb-3" width="150"
-                  height="150" v-if="userPhoto">
+                <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
               </div>
               <div class="col-md-8">
                 <div class="mb-3">
@@ -119,13 +109,10 @@
 
           <!-- Action Buttons -->
           <div class="text-center mb-4">
-            <button class="btn btn-info me-2"
-              @click="showProfile = !showProfile">
-              <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง'
-              }}โปรไฟล์
+            <button class="btn btn-info me-2" @click="showProfile = !showProfile">
+              <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
             </button>
-            <button class="btn btn-primary"
-              @click="showCreateForm = !showCreateForm">
+            <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
               <i class="fas fa-plus"></i> สร้างห้องเรียน
             </button>
           </div>
@@ -152,16 +139,25 @@
 
           <!-- Classrooms Grid -->
           <div class="row">
-            <div v-for="classroom in classrooms" :key="classroom.id"
-              class="col-md-4 mb-4">
-              <div class="card" @click="viewClassroom(classroom.id)">
-                <img
-                  :src="classroom.info.photo || 'https://via.placeholder.com/400'"
-                  class="card-img-top" alt="classroom image"
-                  style="height: 200px; object-fit: cover;">
+            <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
+              <div class="card">
+                <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" 
+                     class="card-img-top" alt="classroom image"
+                     style="height: 200px; object-fit: cover;">
                 <div class="card-body">
                   <h5 class="card-title">{{ classroom.info.name }}</h5>
                   <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
+                  <div class="btn-group w-100">
+                    <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
+                      <i class="fas fa-eye"></i> ดู
+                    </button>
+                    <button class="btn btn-warning" @click="editClassroom(classroom)">
+                      <i class="fas fa-edit"></i> แก้ไข
+                    </button>
+                    <button class="btn btn-danger" @click="confirmDelete(classroom)">
+                      <i class="fas fa-trash"></i> ลบ
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -177,13 +173,60 @@
             <div class="card-body">
               <h4>{{ currentClassroom.info.name }}</h4>
               <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
-              <img :src="currentClassroom.info.photo"
-                class="img-fluid rounded mb-3"
-                v-if="currentClassroom.info.photo">
-              <button class="btn btn-primary"
-                @click="showQRCode(currentClassroomId)">
+              <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" v-if="currentClassroom.info.photo">
+              <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
                 <i class="fas fa-qrcode"></i> แสดง QR Code
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Classroom Modal -->
+      <div class="modal fade" id="editClassroomModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">แก้ไขห้องเรียน</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">รหัสวิชา</label>
+                <input type="text" class="form-control" v-model="editingClassroom.code">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">ชื่อวิชา</label>
+                <input type="text" class="form-control" v-model="editingClassroom.name">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">URL รูปภาพ</label>
+                <input type="text" class="form-control" v-model="editingClassroom.photo">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="button" class="btn btn-primary" @click="saveEdit">บันทึก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">ยืนยันการลบห้องเรียน</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p>คุณแน่ใจหรือไม่ที่จะลบห้องเรียน "{{ deletingClassroom?.info?.name }}"?</p>
+              <p class="text-danger">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+              <button type="button" class="btn btn-danger" @click="deleteClassroom">ลบ</button>
             </div>
           </div>
         </div>
@@ -195,8 +238,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">QR Code สำหรับลงทะเบียน</h5>
-              <button type="button" class="btn-close"
-                data-bs-dismiss="modal"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
               <div id="qrcode"></div>
@@ -205,178 +247,247 @@
               <button class="btn btn-success" @click="downloadQRCode">
                 <i class="fas fa-download"></i> ดาวน์โหลด QR Code
               </button>
-              <button type="button" class="btn btn-secondary"
-                data-bs-dismiss="modal">ปิด</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    
 
     <script>
-    const { createApp, ref, onMounted } = Vue;
+      const { createApp, ref, onMounted } = Vue;
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
-      authDomain: "finalmobileweb.firebaseapp.com",
-      projectId: "finalmobileweb",
-      storageBucket: "finalmobileweb.firebasestorage.app",
-      messagingSenderId: "763318502667",
-      appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
-      measurementId: "G-LSNZG1BMNT"
-    };
+      const firebaseConfig = {
+        apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
+        authDomain: "finalmobileweb.firebaseapp.com",
+        projectId: "finalmobileweb",
+        storageBucket: "finalmobileweb.firebasestorage.app",
+        messagingSenderId: "763318502667",
+        appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
+        measurementId: "G-LSNZG1BMNT"
+      };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const firestore = firebase.firestore();
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const firestore = firebase.firestore();
 
-    createApp({
-      setup() {
-        const user = ref(null);
-        const userName = ref("");
-        const userPhoto = ref("");
-        const classrooms = ref([]);
-        const showCreateForm = ref(false);
-        const showProfile = ref(false);
-        const classCode = ref("");
-        const className = ref("");
-        const classPhoto = ref("");
-        const currentClassroomId = ref(null);
-        const currentClassroom = ref(null);
+      createApp({
+        setup() {
+          const user = ref(null);
+          const userName = ref("");
+          const userPhoto = ref("");
+          const classrooms = ref([]);
+          const showCreateForm = ref(false);
+          const showProfile = ref(false);
+          const classCode = ref("");
+          const className = ref("");
+          const classPhoto = ref("");
+          const currentClassroomId = ref(null);
+          const currentClassroom = ref(null);
+          const editingClassroom = ref({ code: '', name: '', photo: '', id: null });
+          const deletingClassroom = ref(null);
+          const editModal = ref(null);
+          const deleteModal = ref(null);
 
-        async function fetchClassrooms() {
-          if (!user.value) return;
-          const querySnapshot = await firestore.collection("users").doc(user.value.uid)
-            .collection("classroom").get();
-          classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-
-        async function createClassroom() {
-          if (!user.value) return;
-          const classRef = firestore.collection("users").doc(user.value.uid)
-            .collection("classroom").doc();
-          await classRef.set({
-            owner: user.value.uid,
-            info: {
-              code: classCode.value,
-              name: className.value,
-              photo: classPhoto.value
-            }
-          });
-          showCreateForm.value = false;
-          fetchClassrooms();
-        }
-
-        async function signInWithGoogle() {
-          const provider = new firebase.auth.GoogleAuthProvider();
-          try {
-            const result = await auth.signInWithPopup(provider);
-            user.value = result.user;
-            userName.value = result.user.displayName;
-            userPhoto.value = result.user.photoURL;
-            await fetchClassrooms();
-          } catch (error) {
-            console.error("Google Sign-in Error:", error);
+          async function fetchClassrooms() {
+            if (!user.value) return;
+            const querySnapshot = await firestore.collection("users").doc(user.value.uid)
+              .collection("classroom").get();
+            classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           }
-        }
 
-        async function signOut() {
-          await auth.signOut();
-          user.value = null;
-          classrooms.value = [];
-          currentClassroomId.value = null;
-          currentClassroom.value = null;
-        }
-
-        async function updateProfile() {
-          if (!user.value) return;
-          try {
-            await user.value.updateProfile({
-              displayName: userName.value,
-              photoURL: userPhoto.value
+          async function createClassroom() {
+            if (!user.value) return;
+            const classRef = firestore.collection("users").doc(user.value.uid)
+              .collection("classroom").doc();
+            await classRef.set({
+              owner: user.value.uid,
+              info: {
+                code: classCode.value,
+                name: className.value,
+                photo: classPhoto.value
+              }
             });
-            alert("อัปเดตโปรไฟล์สำเร็จ");
-          } catch (error) {
-            alert("เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์");
+            showCreateForm.value = false;
+            // Reset form
+            classCode.value = "";
+            className.value = "";
+            classPhoto.value = "";
+            fetchClassrooms();
           }
-        }
 
-        async function showQRCode(classroomId) {
-          const qrCodeElement = document.getElementById("qrcode");
-          qrCodeElement.innerHTML = "";
-
-          const qrData = JSON.stringify({
-            classroomId: classroomId,
-            className: currentClassroom.value.info.name,
-            classCode: currentClassroom.value.info.code
-          });
-
-          new QRCode(qrCodeElement, {
-            text: qrData,
-            width: 200,
-            height: 200,
-          });
-
-          const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
-          modal.show();
-        }
-
-        function downloadQRCode() {
-          const canvas = document.querySelector("#qrcode canvas");
-          const image = canvas.toDataURL("image/png");
-          const link = document.createElement('a');
-          link.download = `qrcode-${currentClassroom.value.info.code}.png`;
-          link.href = image;
-          link.click();
-        }
-
-        async function viewClassroom(classroomId) {
-          currentClassroomId.value = classroomId;
-          const doc = await firestore.collection("users").doc(user.value.uid)
-            .collection("classroom").doc(classroomId).get();
-          currentClassroom.value = doc.data();
-        }
-
-        function backToHome() {
-          currentClassroomId.value = null;
-          currentClassroom.value = null;
-        }
-
-        onMounted(() => {
-          auth.onAuthStateChanged(async (loggedUser) => {
-            user.value = loggedUser;
-            if (loggedUser) {
-              userName.value = loggedUser.displayName || "";
-              userPhoto.value = loggedUser.photoURL || "";
+          async function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+              const result = await auth.signInWithPopup(provider);
+              user.value = result.user;
+              userName.value = result.user.displayName;
+              userPhoto.value = result.user.photoURL;
               await fetchClassrooms();
+            } catch (error) {
+              console.error("Google Sign-in Error:", error);
             }
-          });
-        });
+          }
 
-        return {
-          user,
-          userName,
-          userPhoto,
-          classrooms,
-          showCreateForm,
-          showProfile,
-          classCode,
-          className,
-          classPhoto,
-          currentClassroomId,
-          currentClassroom,
-          signInWithGoogle,
-          signOut,
-          createClassroom,
-          updateProfile,
-          showQRCode,
-          downloadQRCode,
-          viewClassroom,
-          backToHome,
-        };
-      }
-    }).mount("#app");
-  </script>
+          async function signOut() {
+            await auth.signOut();
+            user.value = null;
+            classrooms.value = [];
+            currentClassroomId.value = null;
+            currentClassroom.value = null;
+          }
+
+          async function updateProfile() {
+            if (!user.value) return;
+            try {
+              await user.value.updateProfile({
+                displayName: userName.value,
+                photoURL: userPhoto.value
+              });
+              alert('อัปเดตโปรไฟล์สำเร็จ');
+            } catch (error) {
+              alert('เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์');
+            }
+          }
+
+          async function showQRCode(classroomId) {
+            const qrCodeElement = document.getElementById("qrcode");
+            qrCodeElement.innerHTML = "";
+
+            const qrData = JSON.stringify({
+              classroomId: classroomId,
+              className: currentClassroom.value.info.name,
+              classCode: currentClassroom.value.info.code
+            });
+
+            new QRCode(qrCodeElement, {
+              text: qrData,
+              width: 200,
+              height: 200,
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+            modal.show();
+          }
+
+          function downloadQRCode() {
+            const canvas = document.querySelector("#qrcode canvas");
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `qrcode-${currentClassroom.value.info.code}.png`;
+            link.href = image;
+            link.click();
+          }
+
+          async function viewClassroom(classroomId) {
+            currentClassroomId.value = classroomId;
+            const doc = await firestore.collection("users").doc(user.value.uid)
+              .collection("classroom").doc(classroomId).get();
+            currentClassroom.value = doc.data();
+          }
+
+          function backToHome() {
+            currentClassroomId.value = null;
+            currentClassroom.value = null;
+          }
+
+          function editClassroom(classroom) {
+            editingClassroom.value = {
+              id: classroom.id,
+              code: classroom.info.code,
+              name: classroom.info.name,
+              photo: classroom.info.photo
+            };
+            editModal.value = new bootstrap.Modal(document.getElementById('editClassroomModal'));
+            editModal.value.show();
+          }
+
+          async function saveEdit() {
+            if (!user.value || !editingClassroom.value.id) return;
+            
+            try {
+              await firestore.collection("users").doc(user.value.uid)
+                .collection("classroom").doc(editingClassroom.value.id)
+                .update({
+                  info: {
+                    code: editingClassroom.value.code,
+                    name: editingClassroom.value.name,
+                    photo: editingClassroom.value.photo
+                  }
+                });
+              
+              editModal.value.hide();
+              await fetchClassrooms();
+              alert('แก้ไขห้องเรียนสำเร็จ');
+            } catch (error) {
+              console.error("Error updating classroom:", error);
+              alert('เกิดข้อผิดพลาดในการแก้ไขห้องเรียน');
+            }
+          }
+
+          function confirmDelete(classroom) {
+            deletingClassroom.value = classroom;
+            deleteModal.value = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.value.show();
+          }
+
+          async function deleteClassroom() {
+            if (!user.value || !deletingClassroom.value) return;
+            
+            try {
+              await firestore.collection("users").doc(user.value.uid)
+                .collection("classroom").doc(deletingClassroom.value.id)
+                .delete();
+              
+              deleteModal.value.hide();
+              await fetchClassrooms();
+              alert('ลบห้องเรียนสำเร็จ');
+            } catch (error) {
+              console.error("Error deleting classroom:", error);
+              alert('เกิดข้อผิดพลาดในการลบห้องเรียน');
+            }
+          }
+
+          onMounted(() => {
+            auth.onAuthStateChanged(async (loggedUser) => {
+              user.value = loggedUser;
+              if (loggedUser) {
+                userName.value = loggedUser.displayName || "";
+                userPhoto.value = loggedUser.photoURL || "";
+                await fetchClassrooms();
+              }
+            });
+          });
+
+          return {
+            user,
+            userName,
+            userPhoto,
+            classrooms,
+            showCreateForm,
+            showProfile,
+            classCode,
+            className,
+            classPhoto,
+            currentClassroomId,
+            currentClassroom,
+            editingClassroom,
+            deletingClassroom,
+            signInWithGoogle,
+            signOut,
+            createClassroom,
+            updateProfile,
+            showQRCode,
+            downloadQRCode,
+            viewClassroom,
+            backToHome,
+            editClassroom,
+            saveEdit,
+            confirmDelete,
+            deleteClassroom,
+          };
+        }
+      }).mount("#app");
+    </script>
   </body>
 </html>
