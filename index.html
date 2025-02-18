@@ -296,25 +296,31 @@
             classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           }
 
-          async function createClassroom() {
-            if (!user.value) return;
-            const classRef = firestore.collection("users").doc(user.value.uid)
-              .collection("classroom").doc();
-            await classRef.set({
-              owner: user.value.uid,
-              info: {
-                code: classCode.value,
-                name: className.value,
-                photo: classPhoto.value
-              }
-            });
-            showCreateForm.value = false;
-            // Reset form
-            classCode.value = "";
-            className.value = "";
-            classPhoto.value = "";
-            fetchClassrooms();
-          }
+            async function createClassroom() {
+  if (!user.value) return;
+  
+  // สร้างห้องเรียนใหม่ใน Firestore
+  const classRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc();
+  
+  // เพิ่มข้อมูลห้องเรียนและกำหนดค่า status เป็น 1 (อาจารย์)
+  await classRef.set({
+    owner: user.value.uid,
+    info: {
+      code: classCode.value,
+      name: className.value,
+      photo: classPhoto.value
+    },
+    status: 1  // กำหนดค่า status เป็น 1 (อาจารย์)
+  });
+  
+  showCreateForm.value = false;
+  // รีเซ็ตฟอร์ม
+  classCode.value = "";
+  className.value = "";
+  classPhoto.value = "";
+  fetchClassrooms();
+}
 
           async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
