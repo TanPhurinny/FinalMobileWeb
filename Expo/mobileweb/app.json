@@ -45,6 +45,12 @@
         "projectId": "3eb2221e-8612-44b0-9468-71db34111260"
       }
     },
-    "owner": "taweephong"
+    "owner": "taweephong",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3eb2221e-8612-44b0-9468-71db34111260"
+    }
   }
 }

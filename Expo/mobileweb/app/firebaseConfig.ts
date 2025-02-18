@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { getFirestore } from "firebase/firestore"; // นำเข้า Firestore แบบใหม่
 
 // 🔥 ใส่ค่าจริงจาก Firebase Console
 const firebaseConfig = {
@@ -13,13 +13,14 @@ const firebaseConfig = {
     measurementId: "G-LSNZG1BMNT"
   };
 
-  
-
 // ✅ เริ่มต้น Firebase App
 const app = initializeApp(firebaseConfig);
 
 // ✅ ใช้ getAuth() ตรงๆ ไม่ต้องใช้ initializeAuth
 export const auth = getAuth(app);
+
+// ✅ ใช้ getFirestore() เพื่อเชื่อมต่อกับ Firestore
+export const firestore = getFirestore(app);  // เพิ่มการเชื่อมต่อกับ Firestore
 
 // ✅ เพิ่ม Default Export
 export default app;
