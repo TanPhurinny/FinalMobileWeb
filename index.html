@@ -296,7 +296,7 @@
             classrooms.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           }
 
-            async function createClassroom() {
+          async function createClassroom() {
   if (!user.value) return;
   
   // สร้างห้องเรียนใหม่ใน Firestore
@@ -321,6 +321,7 @@
   classPhoto.value = "";
   fetchClassrooms();
 }
+
 
           async function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
