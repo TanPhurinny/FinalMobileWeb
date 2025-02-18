@@ -1,186 +1,303 @@
 <!DOCTYPE html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ระบบจัดการห้องเรียนออนไลน์</title>
 
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบจัดการห้องเรียนออนไลน์</title>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- QRCode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- QRCode.js -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
-    <style>
-      #qrcode {
-        padding: 20px;
-        background: white;
-        border-radius: 10px;
-        display: inline-block;
-      }
-      .card {
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .card:hover {
-        transform: translateY(-5px);
-      }
-      .profile-section {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-      }
-      .create-form {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-      .logo {
-        width: 1200px;
-        height: auto;
-        margin-top: 50px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app" class="container py-4">
-      <!-- Navbar -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#">
-            <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
-          </a>
-          <div v-if="user" class="d-flex align-items-center">
-            <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
-            <span class="me-3">{{ userName }}</span>
-            <button class="btn btn-outline-danger" @click="signOut">
-              <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
-            </button>
-          </div>
-        </div>
-      </nav>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-      <!-- Login Screen -->
-      <div v-if="!user" class="text-center">
-        <h2 class="mb-4">ยินดีต้อนรับสู่ระบบจัดการห้องเรียนออนไลน์</h2>
-        <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
-          <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
-        </button>
-        <div><img class="logo" src="./img/logocom.png" alt="logo"></div>
-      </div>
+  <style>
+    #qrcode {
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      display: inline-block;
+    }
 
-      <!-- Main Content -->
-      <div v-else>
-        <div v-if="!currentClassroomId">
-          <!-- Profile Section -->
-          <div v-if="showProfile" class="profile-section">
-            <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
-            <div class="row">
-              <div class="col-md-4 text-center">
-                <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
-              </div>
-              <div class="col-md-8">
-                <div class="mb-3">
-                  <label class="form-label">ชื่อผู้ใช้</label>
-                  <input type="text" v-model="userName" class="form-control">
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">URL รูปโปรไฟล์</label>
-                  <input type="text" v-model="userPhoto" class="form-control">
-                </div>
-                <button class="btn btn-success" @click="updateProfile">
-                  <i class="fas fa-save"></i> บันทึกข้อมูล
-                </button>
-              </div>
-            </div>
-          </div>
+    .card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
 
-          <!-- Action Buttons -->
-          <div class="text-center mb-4">
-            <button class="btn btn-info me-2" @click="showProfile = !showProfile">
-              <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
-            </button>
-            <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
-              <i class="fas fa-plus"></i> สร้างห้องเรียน
-            </button>
-          </div>
+    .card:hover {
+      transform: translateY(-5px);
+    }
 
-          <!-- Create Classroom Form -->
-          <div v-if="showCreateForm" class="create-form card p-4 mb-4">
-            <h4 class="text-center mb-3">สร้างห้องเรียนใหม่</h4>
-            <div class="mb-3">
-              <label class="form-label">รหัสวิชา</label>
-              <input type="text" class="form-control" v-model="classCode">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">ชื่อวิชา</label>
-              <input type="text" class="form-control" v-model="className">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">URL รูปภาพ</label>
-              <input type="text" class="form-control" v-model="classPhoto">
-            </div>
-            <button class="btn btn-success w-100" @click="createClassroom">
-              <i class="fas fa-plus-circle"></i> สร้างห้องเรียน
-            </button>
-          </div>
+    .profile-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
 
-          <!-- Classrooms Grid -->
-          <div class="row">
-            <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
-              <div class="card">
-                <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" 
-                     class="card-img-top" alt="classroom image"
-                     style="height: 200px; object-fit: cover;">
-                <div class="card-body">
-                  <h5 class="card-title">{{ classroom.info.name }}</h5>
-                  <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
-                  <div class="btn-group w-100">
-                    <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
-                      <i class="fas fa-eye"></i> ดู
-                    </button>
-                    <button class="btn btn-warning" @click="editClassroom(classroom)">
-                      <i class="fas fa-edit"></i> แก้ไข
-                    </button>
-                    <button class="btn btn-danger" @click="confirmDelete(classroom)">
-                      <i class="fas fa-trash"></i> ลบ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    .create-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
-        <!-- Classroom Detail -->
-        <div v-else>
-          <button class="btn btn-secondary mb-3" @click="backToHome">
-            <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+    .logo {
+      width: 1200px;
+      height: auto;
+      margin-top: 50px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container py-4">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
+        </a>
+        <div v-if="user" class="d-flex align-items-center">
+          <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
+          <span class="me-3">{{ userName }}</span>
+          <button class="btn btn-outline-danger" @click="signOut">
+            <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
           </button>
-          <div class="card">
-            <div class="card-body">
-              <h4>{{ currentClassroom.info.name }}</h4>
-              <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
-              <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" v-if="currentClassroom.info.photo">
-              <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
-                <i class="fas fa-qrcode"></i> แสดง QR Code
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div v-if="!user" class="text-center">
+      <h2 class="mb-4">ยินดีต้อนรับสู่ระบบจัดการห้องเรียนออนไลน์</h2>
+      <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
+        <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
+      </button>
+      <div><img class="logo" src="./img/logocom.png" alt="logo"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else>
+      <div v-if="!currentClassroomId">
+        <!-- Profile Section -->
+        <div v-if="showProfile" class="profile-section">
+          <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
+          <div class="row">
+            <div class="col-md-4 text-center">
+              <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">ชื่อผู้ใช้</label>
+                <input type="text" v-model="userName" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">URL รูปโปรไฟล์</label>
+                <input type="text" v-model="userPhoto" class="form-control">
+              </div>
+              <button class="btn btn-success" @click="updateProfile">
+                <i class="fas fa-save"></i> บันทึกข้อมูล
               </button>
             </div>
           </div>
         </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mb-4">
+          <button class="btn btn-info me-2" @click="showProfile = !showProfile">
+            <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
+          </button>
+          <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
+            <i class="fas fa-plus"></i> สร้างห้องเรียน
+          </button>
+        </div>
+
+        <!-- Create Classroom Form -->
+        <div v-if="showCreateForm" class="create-form card p-4 mb-4">
+          <h4 class="text-center mb-3">สร้างห้องเรียนใหม่</h4>
+          <div class="mb-3">
+            <label class="form-label">รหัสวิชา</label>
+            <input type="text" class="form-control" v-model="classCode">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ชื่อวิชา</label>
+            <input type="text" class="form-control" v-model="className">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">URL รูปภาพ</label>
+            <input type="text" class="form-control" v-model="classPhoto">
+          </div>
+          <button class="btn btn-success w-100" @click="createClassroom">
+            <i class="fas fa-plus-circle"></i> สร้างห้องเรียน
+          </button>
+        </div>
+
+        <!-- Classrooms Grid -->
+        <div class="row">
+          <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
+            <div class="card">
+              <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" class="card-img-top"
+                alt="classroom image" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <h5 class="card-title">{{ classroom.info.name }}</h5>
+                <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
+                <div class="btn-group w-100">
+                  <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
+                    <i class="fas fa-eye"></i> ดู
+                  </button>
+                  <button class="btn btn-warning" @click="editClassroom(classroom)">
+                    <i class="fas fa-edit"></i> แก้ไข
+                  </button>
+                  <button class="btn btn-danger" @click="confirmDelete(classroom)">
+                    <i class="fas fa-trash"></i> ลบ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Classroom Detail -->
+      <div v-if="currentClassroomId">
+        <button class="btn btn-secondary mb-3" @click="backToHome">
+          <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+        </button>
+        <div class="card">
+          <div class="card-body">
+            <h4>{{ currentClassroom.info.name }}</h4>
+            <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
+            <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" v-if="currentClassroom.info.photo">
+            <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
+              <i class="fas fa-qrcode"></i> แสดง QR Code
+            </button>
+          </div>
+        </div>
+
+        <!-- ปุ่มเช็คชื่อ -->
+        <div class="mt-3">
+          <button class="btn btn-success" @click="openCheckin">
+            <i class="fas fa-check-circle"></i> เปิดเช็คชื่อ
+          </button>
+          <button class="btn btn-warning" @click="closeCheckin">
+            <i class="fas fa-times-circle"></i> ปิดเช็คชื่อ
+          </button>
+          <button class="btn btn-primary" @click="saveCheckin">
+            <i class="fas fa-save"></i> บันทึกการเช็คชื่อ
+          </button>
+          <button class="btn btn-info" @click="showStudentList">
+            <i class="fas fa-users"></i> แสดงรายชื่อ
+          </button>
+
+        </div>
+
+        <!-- ตารางแสดงรายชื่อ -->
+        <div v-if="showStudents" class="mt-3">
+          <h4>รายชื่อนักเรียน</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัส</th>
+                <th>ชื่อ</th>
+                <th>รูปภาพ</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(student, index) in students" :key="student.id">
+                <td>{{ index + 1 }}</td>
+                <td>{{ student.id }}</td>
+                <td>{{ student.name }}</td>
+                <td><img :src="student.photo" width="50" v-if="student.photo"></td>
+                <td>{{ student.status ? 'เช็คชื่อแล้ว' : 'ยังไม่เช็ค' }}</td>
+                <td>
+                  <button class="btn btn-danger btn-sm" @click="removeStudent(student.id)">
+                    <i class="fas fa-trash"></i> ลบ
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ตารางแสดงคะแนน -->
+        <div v-if="showScores" class="mt-3">
+          <h4>คะแนนนักเรียน</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัส</th>
+                <th>ชื่อ</th>
+                <th>หมายเหตุ</th>
+                <th>วันเวลา</th>
+                <th>คะแนน</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="student in scores" :key="student.id">
+                <td>{{ student.index }}</td>
+                <td>{{ student.id }}</td>
+                <td>{{ student.name }}</td>
+                <td><input type="text" v-model="student.remark" class="form-control"></td>
+                <td>{{ student.timestamp }}</td>
+                <td><input type="number" v-model="student.score" class="form-control"></td>
+                <td><input type="text" v-model="student.statusText" class="form-control"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- ปุ่มบันทึกคะแนน -->
+          <button class="btn btn-success" @click="saveScores">
+            <i class="fas fa-save"></i> บันทึกข้อมูล
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showStudents_checkin" class="mt-3">
+        <h4>รายชื่อนักเรียนที่เช็คชื่อ</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>รหัส</th>
+              <th>ชื่อ</th>
+              <th>หมายเหตุ</th>
+              <th>วันเวลา</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="student in students" :key="student.id">
+              <td>{{ student.index }}</td>
+              <td>{{ student.id }}</td>
+              <td>{{ student.name }}</td>
+              <td>{{ student.status }}</td>
+              <td>{{ student.timestamp }}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" @click="removeStudent(student.id)">
+                  <i class="fas fa-trash"></i> ลบ
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
 
       <!-- Edit Classroom Modal -->
       <div class="modal fade" id="editClassroomModal" tabindex="-1">
@@ -254,6 +371,7 @@
       </div>
     </div>
 
+
     <script>
       const { createApp, ref, onMounted } = Vue;
 
@@ -288,6 +406,148 @@
           const deletingClassroom = ref(null);
           const editModal = ref(null);
           const deleteModal = ref(null);
+          const showStudents_checkin = ref(false);
+
+          ////
+
+          const students = ref([]);
+          const showStudents = ref(false);
+          const checkinSession = ref(null);
+          const showScores = ref(false);
+          const scores = ref([]);
+
+
+
+          // ดึงข้อมูลนักเรียนที่เช็คชื่อจาก Firestore
+          async function fetchScores() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            firestore.collection("classroom").doc(currentClassroom.value.id)
+              .collection("checkin").doc(checkinSession.value.toString())
+              .collection("scores")
+              .onSnapshot(snapshot => {
+                scores.value = snapshot.docs.map((doc, index) => ({
+                  id: doc.id,
+                  index: index + 1,
+                  name: doc.data().name,
+                  status: doc.data().status ? "เช็คชื่อแล้ว" : "ยังไม่เช็ค",
+                  timestamp: doc.data().timestamp?.toDate().toLocaleString() || "ไม่มีข้อมูล",
+                  score: doc.data().score || 0,
+                  remark: doc.data().remark || "",
+                  statusText: doc.data().statusText || ""
+                }));
+              });
+
+            showScores.value = true; // แสดงตารางเมื่อดึงข้อมูลสำเร็จ
+          }
+
+          // อัปเดตข้อมูลคะแนน, หมายเหตุ และสถานะลงใน Firestore
+          async function saveScores() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            for (const student of scores.value) {
+              await firestore.collection("classroom").doc(currentClassroom.value.id)
+                .collection("checkin").doc(checkinSession.value.toString())
+                .collection("scores").doc(student.id)
+                .update({
+                  score: student.score,
+                  remark: student.remark,
+                  statusText: student.statusText
+                });
+            }
+
+            alert("บันทึกข้อมูลคะแนนสำเร็จ!");
+          }
+
+
+          async function removeStudent(studentId) {
+            if (!currentClassroomId.value || !checkinSession.value) return;
+
+            await firestore.collection("classroom").doc(currentClassroomId.value)
+              .collection("checkin").doc(checkinSession.value.toString())
+              .collection("scores").doc(studentId).delete();
+
+            alert("ลบรายชื่อนักเรียนสำเร็จ!");
+          }
+
+          async function showStudentList() {
+            if (!currentClassroom.value) return; 
+            showStudents.value = !showStudents.value; 
+            const studentRef = firestore.collection("classroom").doc(currentClassroom.value.id)
+              .collection("students"); 
+            const snapshot = await studentRef.get(); 
+            students.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+            console.log("Fetched students:", students.value); 
+          }
+
+
+
+
+          async function openCheckin() {
+            if (!currentClassroom.value) return;
+
+            // สร้าง session สำหรับการเช็คชื่อ
+            checkinSession.value = new Date().getTime(); // ใช้เวลาปัจจุบันเป็น ID ของ session
+
+            // ดึงข้อมูลนักเรียนจาก collection students
+            const studentRef = firestore.collection("classroom").doc(currentClassroom.value.id)
+              .collection("checkin");
+
+            const snapshot = await studentRef.get();
+
+            // เพิ่มข้อมูลเช็คชื่อของนักเรียนใน collection checkin
+            snapshot.forEach(doc => {
+              firestore.collection("classroom").doc(currentClassroom.value.id)
+                .collection("checkin").doc(checkinSession.value.toString())
+                .collection("students").doc(doc.id).set({
+                  stdid: doc.data().studentId,
+                  name: doc.data().name,
+                  remark: "",  // ตั้งค่า default หรือปล่อยว่าง
+                  date: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            alert("เปิดเช็คชื่อแล้ว!");
+          }
+
+          async function closeCheckin() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+            alert("ปิดเช็คชื่อแล้ว!");
+          }
+
+          async function saveCheckin() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            const studentRef = firestore
+              .collection("classroom")
+              .doc(currentClassroom.value.id)
+              .collection("checkin")
+              .doc(checkinSession.value.toString())
+              .collection("scores");
+
+            const snapshot = await studentRef.get();
+
+            if (snapshot.empty) {
+              alert("ไม่มีนักเรียนที่เช็คชื่อ กรุณาเปิดเช็คชื่อก่อน!");
+              return;
+            }
+
+            snapshot.forEach((doc) => {
+              studentRef.doc(doc.id).update({
+                status: 1,
+              });
+            });
+
+            alert("บันทึกการเช็คชื่อสำเร็จ!");
+
+            showStudents_checkin.value = true; // ✅ แสดงตารางเช็คชื่อ
+            console.log("📢 showStudents_checkin อัปเดตเป็น:", showStudents_checkin.value);
+
+            await nextTick();
+            watchCheckinStudents();
+          }
+
+
 
           async function fetchClassrooms() {
             if (!user.value) return;
@@ -386,6 +646,7 @@
             currentClassroom.value = doc.data();
           }
 
+
           function backToHome() {
             currentClassroomId.value = null;
             currentClassroom.value = null;
@@ -404,7 +665,7 @@
 
           async function saveEdit() {
             if (!user.value || !editingClassroom.value.id) return;
-            
+
             try {
               await firestore.collection("users").doc(user.value.uid)
                 .collection("classroom").doc(editingClassroom.value.id)
@@ -415,7 +676,7 @@
                     photo: editingClassroom.value.photo
                   }
                 });
-              
+
               editModal.value.hide();
               await fetchClassrooms();
               alert('แก้ไขห้องเรียนสำเร็จ');
@@ -433,12 +694,12 @@
 
           async function deleteClassroom() {
             if (!user.value || !deletingClassroom.value) return;
-            
+
             try {
               await firestore.collection("users").doc(user.value.uid)
                 .collection("classroom").doc(deletingClassroom.value.id)
                 .delete();
-              
+
               deleteModal.value.hide();
               await fetchClassrooms();
               alert('ลบห้องเรียนสำเร็จ');
@@ -485,9 +746,19 @@
             saveEdit,
             confirmDelete,
             deleteClassroom,
+            currentClassroom,
+            students,
+            showStudents,
+            showStudentList,
+            openCheckin,
+            closeCheckin,
+            saveCheckin,
+            removeStudent,
+
           };
         }
       }).mount("#app");
     </script>
-  </body>
+</body>
+
 </html>
