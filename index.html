@@ -58,6 +58,15 @@
       height: auto;
       margin-top: 50px;
     }
+
+    @font-face {
+      font-family: myProjectFont;
+      src: url(font/ibmplexsansthairegular.ttf);
+    }
+
+    body{
+      font-family: myProjectFont;
+    }
   </style>
 </head>
 
@@ -170,38 +179,60 @@
         </div>
       </div>
 
-      <!-- Classroom Detail -->
-      <div v-if="currentClassroomId">
-        <button class="btn btn-secondary mb-3" @click="backToHome">
-          <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
-        </button>
-        <div class="card">
-          <div class="card-body">
-            <h4>{{ currentClassroom.info.name }}</h4>
-            <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
-            <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" v-if="currentClassroom.info.photo">
-            <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
-              <i class="fas fa-qrcode"></i> แสดง QR Code
+     <!-- Classroom Detail -->
+<div v-if="currentClassroomId">
+  <button class="btn btn-secondary mb-3" @click="backToHome">
+    <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+  </button>
+
+  <!-- Classroom information section -->
+  <div class="card mb-4">
+    <div class="card-body">
+
+      <!-- ตารางข้อมูลห้องเรียนรวมรูปภาพ -->
+      <table class="table">
+        <tr>
+          <td style="width: 100px; vertical-align: middle;">
+            <!-- รูปภาพห้องเรียน -->
+            <img :src="currentClassroom.info.photo" class="img-fluid rounded" style="max-width: 200px; object-fit: cover;" v-if="currentClassroom.info.photo">
+          </td>
+          <td>
+            <!-- ข้อมูลห้องเรียน -->
+            <h1><b>ชื่อวิชา: </b> {{ currentClassroom.info.name }}</h1>
+            <br>
+            <h1><b>รหัสวิชา: </b> {{ currentClassroom.info.code }}</h1>
+            <br>
+            <button class="btn btn-primary" @click="">
+              <i class="fa-solid fa-plus"></i> สร้างคำถาม
             </button>
-          </div>
-        </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 
-        <!-- ปุ่มเช็คชื่อ -->
-        <div class="mt-3">
-          <button class="btn btn-success" @click="openCheckin">
-            <i class="fas fa-check-circle"></i> เปิดเช็คชื่อ
-          </button>
-          <button class="btn btn-warning" @click="closeCheckin">
-            <i class="fas fa-times-circle"></i> ปิดเช็คชื่อ
-          </button>
-          <button class="btn btn-primary" @click="saveCheckin">
-            <i class="fas fa-save"></i> บันทึกการเช็คชื่อ
-          </button>
-          <button class="btn btn-info" @click="showStudentList">
-            <i class="fas fa-users"></i> แสดงรายชื่อ
-          </button>
+<!-- ปุ่มทั้งหมดในตาราง -->
+<div class="btn-group w-100 d-flex justify-content-between">
+  <div>
+    <button class="btn btn-success" @click="openCheckin">
+      <i class="fas fa-check-circle"></i> เปิดเช็คชื่อ
+    </button>
+    <button class="btn btn-warning" @click="closeCheckin" style="margin-left: 8px;">
+      <i class="fas fa-times-circle"></i> ปิดเช็คชื่อ
+    </button>
+    <button class="btn btn-info" @click="showStudentList" style="margin-left: 8px;">
+      <i class="fas fa-users"></i> แสดงรายชื่อ
+    </button>
+  </div>
 
-        </div>
+  <!-- ปุ่ม "QR Code" ชิดขวาและมีขนาดสั้น -->
+   <div>
+  <button class="btn btn-primary ms-auto w-auto" @click="showQRCode(currentClassroomId)">
+    <i class="fas fa-qrcode"></i> แสดง QR Code
+  </button>
+</div>
+</div>
+
 
         <!-- ตารางแสดงรายชื่อ -->
         <div v-if="showStudents" class="mt-3">
@@ -376,14 +407,14 @@
       const { createApp, ref, onMounted } = Vue;
 
       const firebaseConfig = {
-        apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
-        authDomain: "finalmobileweb.firebaseapp.com",
-        projectId: "finalmobileweb",
-        storageBucket: "finalmobileweb.firebasestorage.app",
-        messagingSenderId: "763318502667",
-        appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
-        measurementId: "G-LSNZG1BMNT"
-      };
+  apiKey: "AIzaSyBK5wZT8xeSclSadPwWqD5t2Gp6uZ5OWyU",
+  authDomain: "testfirebase-80be9.firebaseapp.com",
+  projectId: "testfirebase-80be9",
+  storageBucket: "testfirebase-80be9.firebasestorage.app",
+  messagingSenderId: "507617350642",
+  appId: "1:507617350642:web:f809202fd2412b681e516b",
+  measurementId: "G-D0DFMN0YR9"
+};
 
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
@@ -484,36 +515,92 @@
 
 
           async function openCheckin() {
-            if (!currentClassroom.value) return;
+  if (!currentClassroomId.value || !user.value) return;
 
-            // สร้าง session สำหรับการเช็คชื่อ
-            checkinSession.value = new Date().getTime(); // ใช้เวลาปัจจุบันเป็น ID ของ session
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
 
-            // ดึงข้อมูลนักเรียนจาก collection students
-            const studentRef = firestore.collection("classroom").doc(currentClassroom.value.id)
-              .collection("checkin");
+  // ดึงค่าล่าสุดของ `cno`
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+  let cno = 1; // ถ้ายังไม่มีข้อมูล ให้เริ่มที่ 1
+  let lastStatus = 1; // ค่าเริ่มต้น (1 = ปิดการเช็คชื่อแล้ว)
 
-            const snapshot = await studentRef.get();
+  if (!latestCheckinDoc.empty) {
+    const lastCheckin = latestCheckinDoc.docs[0].data();
+    cno = lastCheckin.cno + 1;
+    lastStatus = lastCheckin.status; // ดึงค่าของ status ล่าสุด
+  }
 
-            // เพิ่มข้อมูลเช็คชื่อของนักเรียนใน collection checkin
-            snapshot.forEach(doc => {
-              firestore.collection("classroom").doc(currentClassroom.value.id)
-                .collection("checkin").doc(checkinSession.value.toString())
-                .collection("students").doc(doc.id).set({
-                  stdid: doc.data().studentId,
-                  name: doc.data().name,
-                  remark: "",  // ตั้งค่า default หรือปล่อยว่าง
-                  date: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            });
+  // ❌ ถ้ายังไม่ปิดการเช็คชื่อรอบที่แล้ว ไม่ให้เปิดใหม่
+  if (lastStatus === 0) {
+    alert(`ให้คุณปิดเช็คชื่อครั้งที่ ${cno - 1} ก่อน`);
+    return;
+  }
 
-            alert("เปิดเช็คชื่อแล้ว!");
-          }
+  // ✅ **ลบ document `placeholder:true` ออกจาก Firestore**
+  const placeholderDoc = await checkinRef.where("placeholder", "==", true).get();
+  placeholderDoc.forEach(async (doc) => {
+    await checkinRef.doc(doc.id).delete();
+  });
 
-          async function closeCheckin() {
-            if (!currentClassroom.value || !checkinSession.value) return;
-            alert("ปิดเช็คชื่อแล้ว!");
-          }
+  // รับค่ารหัสจากผู้ใช้
+  const checkinCode = prompt("กรอกรหัสเช็คชื่อ:");
+
+  if (!checkinCode) {
+    alert("คุณต้องกรอกรหัสเช็คชื่อ!");
+    return;
+  }
+
+  // ✅ **บันทึกข้อมูล `checkin/{cno}`**
+  await checkinRef.doc(cno.toString()).set({
+    cno: cno,
+    code: checkinCode,
+    date: firebase.firestore.FieldValue.serverTimestamp(),
+    status: 0 // ตั้งค่า status เป็น 0 (ยังไม่ปิด)
+  });
+
+  // ✅ **สร้าง collection `students` เปล่าๆ ข้างใน `{cno}`**
+  await checkinRef.doc(cno.toString()).collection("students").add({ placeholder: true });
+
+  alert(`เปิดเช็คชื่อครั้งที่ ${cno} สำเร็จ!`);
+}
+
+
+
+
+          // ✅ ฟังก์ชันปิดการเช็คชื่อ
+async function closeCheckin() {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
+
+  // ดึงข้อมูลล่าสุด
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+
+  if (latestCheckinDoc.empty) {
+    alert("ยังไม่มีการเปิดเช็คชื่อ!");
+    return;
+  }
+
+  const lastCheckin = latestCheckinDoc.docs[0];
+  const cno = lastCheckin.data().cno;
+
+  // ❌ ถ้าเช็คชื่อปิดแล้ว ไม่ต้องทำอะไร
+  if (lastCheckin.data().status === 1) {
+    alert(`การเช็คชื่อครั้งที่ ${cno} ถูกปิดไปแล้ว`);
+    return;
+  }
+
+  // ✅ อัปเดต `status` เป็น `1`
+  await checkinRef.doc(cno.toString()).update({
+    status: 1
+  });
+
+  alert(`ปิดการเช็คชื่อครั้งที่ ${cno} แล้ว`);
+}
 
           async function saveCheckin() {
             if (!currentClassroom.value || !checkinSession.value) return;
@@ -558,12 +645,22 @@
 
           async function createClassroom() {
   if (!user.value) return;
-  
-  // สร้างห้องเรียนใหม่ใน Firestore
+
+  // ตรวจสอบว่ามีรหัสวิชาซ้ำกันหรือไม่
+  const querySnapshot = await firestore.collection("users").doc(user.value.uid)
+    .collection("classroom")
+    .where("info.code", "==", classCode.value)
+    .get();
+
+  if (!querySnapshot.empty) {
+    alert("มีรหัสวิชานี้อยู่แล้ว กรุณาใช้รหัสวิชาอื่น!");
+    return;
+  }
+
+  // สร้างเอกสารใหม่ภายใน collection classroom
   const classRef = firestore.collection("users").doc(user.value.uid)
     .collection("classroom").doc();
-  
-  // เพิ่มข้อมูลห้องเรียนและกำหนดค่า status เป็น 1 (อาจารย์)
+
   await classRef.set({
     owner: user.value.uid,
     info: {
@@ -571,30 +668,52 @@
       name: className.value,
       photo: classPhoto.value
     },
-    status: 1  // กำหนดค่า status เป็น 1 (อาจารย์)
+    status: 1 // กำหนดค่า status เป็น 1 (อาจารย์)
   });
-  
+
+  // ✅ สร้าง collection "students" และ "checkin" พร้อมเอกสาร placeholder
+  await classRef.collection("students").add({ placeholder: true });
+  await classRef.collection("checkin").add({ placeholder: true });
+
   showCreateForm.value = false;
-  // รีเซ็ตฟอร์ม
+
+  // รีเซ็ตค่าฟอร์ม
   classCode.value = "";
   className.value = "";
   classPhoto.value = "";
+
   fetchClassrooms();
+  alert("สร้างห้องเรียนสำเร็จ!");
 }
 
+async function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    const result = await auth.signInWithPopup(provider);
+    user.value = result.user;
+    userName.value = result.user.displayName;
+    userPhoto.value = result.user.photoURL;
 
-          async function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-              const result = await auth.signInWithPopup(provider);
-              user.value = result.user;
-              userName.value = result.user.displayName;
-              userPhoto.value = result.user.photoURL;
-              await fetchClassrooms();
-            } catch (error) {
-              console.error("Google Sign-in Error:", error);
-            }
-          }
+    // บันทึกข้อมูลผู้ใช้ใน Firestore
+    const userRef = firestore.collection("users").doc(user.value.uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      // ถ้ายังไม่มีข้อมูลผู้ใช้ใน Firestore ให้เพิ่มข้อมูล
+      await userRef.set({
+        name: user.value.displayName,
+        email: user.value.email,
+        photo: user.value.photoURL
+      });
+    }
+
+    // ดึงข้อมูลห้องเรียน
+    await fetchClassrooms();
+  } catch (error) {
+    console.error("Google Sign-in Error:", error);
+  }
+}
+
 
           async function signOut() {
             await auth.signOut();
@@ -766,10 +885,5 @@
         }
       }).mount("#app");
     </script>
-<<<<<<< HEAD
 </body>
-
-</html>
-=======
-  </body>
 </html>
