@@ -202,9 +202,40 @@
             <br>
             <h1><b>รหัสวิชา: </b> {{ currentClassroom.info.code }}</h1>
             <br>
-            <button class="btn btn-primary" @click="">
+
+            <button class="btn btn-primary" @click="openCreateQuestionModal">
               <i class="fa-solid fa-plus"></i> สร้างคำถาม
             </button>
+            
+            <!-- พื้นที่แสดงคำถาม -->
+<div class="mt-3">
+  <h4>📌 รายการคำถาม</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>คำถาม</th>
+        <th>จัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(question, index) in questions" :key="question.id">
+        <td>{{ index + 1 }}</td>
+        <td>{{ question.question_text }}</td>
+        <td>
+          <button class="btn btn-info btn-sm" @click="viewAnswers(question.id)">
+            <i class="fas fa-eye"></i> ดูคำตอบ
+          </button>
+          <button class="btn btn-danger btn-sm" @click="deleteQuestion(question.id)" style="margin-left: 8px;">
+            <i class="fas fa-trash"></i> ลบ
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+            
+
           </td>
         </tr>
       </table>
@@ -234,35 +265,31 @@
 </div>
 
 
-        <!-- ตารางแสดงรายชื่อ -->
-        <div v-if="showStudents" class="mt-3">
-          <h4>รายชื่อนักเรียน</h4>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ลำดับ</th>
-                <th>รหัส</th>
-                <th>ชื่อ</th>
-                <th>รูปภาพ</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(student, index) in students" :key="student.id">
-                <td>{{ index + 1 }}</td>
-                <td>{{ student.id }}</td>
-                <td>{{ student.name }}</td>
-                <td><img :src="student.photo" width="50" v-if="student.photo"></td>
-                <td>{{ student.status ? 'เช็คชื่อแล้ว' : 'ยังไม่เช็ค' }}</td>
-                <td>
-                  <button class="btn btn-danger btn-sm" @click="removeStudent(student.id)">
-                    <i class="fas fa-trash"></i> ลบ
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+<div v-if="showStudents" class="mt-3">
+  <h4>รายชื่อนักเรียน</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>รหัสนักเรียน</th>
+        <th>ชื่อนักเรียน</th>
+        <th>สถานะ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(student, index) in students" :key="student.id">
+        <td>{{ index + 1 }}</td>  <!-- แสดงลำดับ -->
+        <td>{{ student.std_id }}</td>  <!-- รหัสนักเรียน -->
+        <td>{{ student.std_name }}</td> <!-- ชื่อนักเรียน -->
+        <td>
+          <!-- เช็คค่าของ status และแสดงข้อความ "นักศึกษา" ถ้าค่าเป็น 2 -->
+          <span v-if="student.status === 2">นักศึกษา</span>
+          <span v-else>สถานะไม่ระบุ</span>
+        </td> <!-- สถานะ -->
+      </tr>
+    </tbody>
+  </table>
+</div>
 
         <!-- ตารางแสดงคะแนน -->
         <div v-if="showScores" class="mt-3">
@@ -402,9 +429,69 @@
       </div>
     </div>
 
+    <!-- Modal สำหรับสร้างคำถาม -->
+<div class="modal fade" id="createQuestionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">สร้างคำถามใหม่</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">กรุณากรอกคำถาม:</label>
+        <input type="text" v-model="newQuestionText" class="form-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" @click="saveQuestion">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <script>
-      const { createApp, ref, onMounted } = Vue;
+<div class="modal fade" id="viewAnswersModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">คำตอบของคำถาม</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h5>📌 คำถาม: {{ selectedQuestionText }}</h5>
+        <table class="table mt-3">
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>ชื่อผู้ตอบ</th>
+              <th>คำตอบ</th>
+              <th>เวลา</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(answer, index) in answers" :key="answer.id">
+              <td>{{ index + 1 }}</td>
+              <td>{{ answer.std_name }}</td>
+              <td>{{ answer.text }}</td>
+              <td>{{ answer.time }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+  import { ref } from 'vue';
+  // โค้ดอื่นๆ ที่ใช้ Vue
+</script>
+
+
+    <script >
+
+      const { createApp, ref, onMounted , watch} = Vue;
 
       const firebaseConfig = {
   apiKey: "AIzaSyBK5wZT8xeSclSadPwWqD5t2Gp6uZ5OWyU",
@@ -419,9 +506,16 @@
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const firestore = firebase.firestore();
+      
 
       createApp({
+        
         setup() {
+          const answers = ref([]);
+          const selectedQuestionText = ref("");
+          const questions = ref([]);
+          const createQuestionModal = ref(null);
+          const newQuestionText = ref("");
           const user = ref(null);
           const userName = ref("");
           const userPhoto = ref("");
@@ -502,14 +596,34 @@
           }
 
           async function showStudentList() {
-            if (!currentClassroom.value) return; 
-            showStudents.value = !showStudents.value; 
-            const studentRef = firestore.collection("classroom").doc(currentClassroom.value.id)
-              .collection("students"); 
-            const snapshot = await studentRef.get(); 
-            students.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-            console.log("Fetched students:", students.value); 
-          }
+  if (!currentClassroomId.value || !user.value) return;  // ตรวจสอบว่าได้เลือกห้องเรียนและผู้ใช้
+
+  showStudents.value = !showStudents.value;  // สลับการแสดง/ซ่อนรายชื่อนักเรียน
+
+  const studentRef = firestore.collection("users")  // เข้าไปใน collection "users"
+    .doc(user.value.uid)  // ใช้ UID ของผู้ใช้
+    .collection("classroom")  // เข้าไปใน collection "classroom"
+    .doc(currentClassroomId.value)  // ใช้ ID ของห้องเรียนที่เลือก
+    .collection("students");  // เข้าไปใน collection "students"
+
+  // ดึงข้อมูลนักเรียนทั้งหมดจาก Firestore
+  const snapshot = await studentRef.get();
+  
+  if (snapshot.empty) {
+    console.log("ไม่พบข้อมูลนักเรียนในห้องเรียนนี้");
+    return;  // ถ้าไม่พบข้อมูลใดๆ ให้หยุดทำงาน
+  }
+
+  // เก็บข้อมูลนักเรียนใน students array
+  students.value = snapshot.docs.map((doc, index) => ({
+    id: doc.id,  // id ของนักเรียน
+    std_id: doc.data().std_id,  // รหัสนักเรียน
+    std_name: doc.data().std_name,  // ชื่อนักเรียน
+    status: doc.data().status,  // สถานะนักเรียน
+  }));
+
+  console.log("Fetched students:", students.value);  // ตรวจสอบข้อมูลที่ดึงมา
+}
 
 
 
@@ -671,9 +785,10 @@ async function closeCheckin() {
     status: 1 // กำหนดค่า status เป็น 1 (อาจารย์)
   });
 
-  // ✅ สร้าง collection "students" และ "checkin" พร้อมเอกสาร placeholder
+  // ✅ สร้าง collection "students", "checkin", และ "questions" พร้อมเอกสาร placeholder
   await classRef.collection("students").add({ placeholder: true });
   await classRef.collection("checkin").add({ placeholder: true });
+  await classRef.collection("questions").add({ placeholder: true });
 
   showCreateForm.value = false;
 
@@ -684,6 +799,168 @@ async function closeCheckin() {
 
   fetchClassrooms();
   alert("สร้างห้องเรียนสำเร็จ!");
+}
+
+function openCreateQuestionModal() {
+  console.log("กดปุ่มสร้างคำถาม");
+  newQuestionText.value = "";
+
+  const modalElement = document.getElementById("createQuestionModal");
+  if (modalElement) {
+    createQuestionModal.value = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+    createQuestionModal.value.show();
+  } else {
+    console.error("❌ ไม่พบ modal createQuestionModal");
+  }
+}
+
+async function saveQuestion() {
+  console.log("✅ ฟังก์ชัน saveQuestion() ถูกเรียกใช้งาน");
+
+  if (!currentClassroomId.value || !user.value) {
+    console.error("❌ ไม่มีห้องเรียนที่เลือก หรือผู้ใช้ยังไม่ได้ล็อกอิน");
+    alert("กรุณาเข้าสู่ระบบ และเลือกห้องเรียนก่อน!");
+    return;
+  }
+
+  if (!newQuestionText.value.trim()) {
+    console.error("❌ ไม่มีข้อความคำถามที่กรอก");
+    alert("กรุณากรอกคำถามก่อนบันทึก!");
+    return;
+  }
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions");
+
+  console.log("📌 เตรียมบันทึกข้อมูลไปที่ Firestore...");
+
+  try {
+    // ✅ ลบ placeholder ถ้ามี
+    const placeholderDocs = await questionRef.where("placeholder", "==", true).get();
+    placeholderDocs.forEach(async (doc) => {
+      await questionRef.doc(doc.id).delete();
+      console.log(`🗑️ ลบ placeholder: ${doc.id}`);
+    });
+
+    // ✅ ดึง question_no ล่าสุด
+    let qno = 1;
+    const latestQuestionDoc = await questionRef.orderBy("question_no", "desc").limit(1).get();
+    if (!latestQuestionDoc.empty) {
+      const lastQuestion = latestQuestionDoc.docs[0].data();
+      qno = lastQuestion.question_no + 1;
+    }
+
+    console.log(`✅ กำหนดค่า question_no เป็น ${qno}`);
+
+    // ✅ สร้างคำถามใหม่
+    const newQuestionRef = questionRef.doc(qno.toString());
+    await newQuestionRef.set({
+      question_no: qno,
+      question_text: newQuestionText.value,
+      question_show: true,
+    });
+
+    console.log("✅ บันทึกคำถามสำเร็จ!");
+
+    // ✅ สร้าง collection answers เปล่า ๆ
+    await newQuestionRef.collection("answers").add({ placeholder: true });
+    console.log("✅ สร้าง collection answers สำเร็จ!");
+
+    alert(`สร้างคำถามครั้งที่ ${qno} สำเร็จ!`);
+
+    // ✅ โหลดคำถามใหม่
+    fetchQuestions();
+
+    // ✅ ปิด Modal หลังจากบันทึกสำเร็จ
+    closeCreateQuestionModal();
+
+    // ✅ รีเซ็ตค่า input
+    newQuestionText.value = "";
+
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการสร้างคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถสร้างคำถามได้!");
+  }
+}
+
+async function fetchQuestions() {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions");
+
+  const snapshot = await questionRef.orderBy("question_no", "asc").get();
+  questions.value = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  console.log("📢 คำถามที่โหลดมา:", questions.value);
+}
+
+// ✅ ฟังก์ชันลบคำถาม
+async function deleteQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  if (!confirm("คุณต้องการลบคำถามนี้ทั้งหมดหรือไม่?")) return;
+
+  try {
+    const questionRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("questions").doc(questionId);
+
+    // 🔥 ลบ sub-collection "answers"
+    const answersRef = questionRef.collection("answers");
+    await deleteCollection(answersRef);
+
+    // 🔥 ลบเอกสารของคำถามหลัก
+    await questionRef.delete();
+
+    alert("ลบคำถามทั้งหมดสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการลบคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถลบคำถามได้!");
+  }
+}
+
+// 🔥 ฟังก์ชันลบ Collection ทั้งหมดใน Firestore
+async function deleteCollection(collectionRef) {
+  const snapshot = await collectionRef.get();
+  const batch = firestore.batch();
+
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+
+// ✅ เรียก fetchQuestions() ทุกครั้งที่เข้าไปดูห้องเรียน
+watch(currentClassroomId, async (newId) => {
+  if (newId) {
+    await fetchQuestions();
+  }
+});
+
+
+function closeCreateQuestionModal() {
+  console.log("✅ ปิด Modal createQuestionModal");
+
+  const modalElement = document.getElementById("createQuestionModal");
+  if (modalElement) {
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+      modalInstance.hide();
+      console.log("✅ Modal ถูกปิดเรียบร้อย");
+    } else {
+      console.error("❌ ไม่พบ instance ของ Modal");
+    }
+  } else {
+    console.error("❌ ไม่พบ element ของ createQuestionModal");
+  }
 }
 
 async function signInWithGoogle() {
@@ -713,7 +990,6 @@ async function signInWithGoogle() {
     console.error("Google Sign-in Error:", error);
   }
 }
-
 
           async function signOut() {
             await auth.signOut();
@@ -819,21 +1095,110 @@ async function signInWithGoogle() {
           }
 
           async function deleteClassroom() {
-            if (!user.value || !deletingClassroom.value) return;
+  if (!user.value || !deletingClassroom.value) return;
 
-            try {
-              await firestore.collection("users").doc(user.value.uid)
-                .collection("classroom").doc(deletingClassroom.value.id)
-                .delete();
+  try {
+    const classRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(deletingClassroom.value.id);
 
-              deleteModal.value.hide();
-              await fetchClassrooms();
-              alert('ลบห้องเรียนสำเร็จ');
-            } catch (error) {
-              console.error("Error deleting classroom:", error);
-              alert('เกิดข้อผิดพลาดในการลบห้องเรียน');
-            }
-          }
+    // 🔥 ลบ Collection "students"
+    const studentsRef = classRef.collection("students");
+    await deleteCollection(studentsRef);
+
+    // 🔥 ลบ Collection "checkin"
+    const checkinRef = classRef.collection("checkin");
+    await deleteCollection(checkinRef);
+
+    // 🔥 ลบ Collection "questions"
+    const questionsRef = classRef.collection("questions");
+    await deleteCollection(questionsRef);
+
+    // 🔥 ลบเอกสารห้องเรียนหลัก
+    await classRef.delete();
+
+    deleteModal.value.hide();
+    await fetchClassrooms();
+    alert("ลบห้องเรียนและข้อมูลทั้งหมดสำเร็จ!");
+
+  } catch (error) {
+    console.error("Error deleting classroom:", error);
+    alert("เกิดข้อผิดพลาดในการลบห้องเรียน");
+  }
+}
+
+async function deleteCollection(collectionRef) {
+  const snapshot = await collectionRef.get();
+  const batch = firestore.batch();
+
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+
+async function viewAnswers(questionId) {
+  console.log("📌 กำลังดึงคำตอบของคำถาม ID:", questionId);
+
+  if (!currentClassroomId.value || !user.value) return;
+
+  // ✅ รีเซ็ตค่าคำตอบก่อน
+  answers.value = [];  // ให้ค่า answers เป็น array เปล่า
+
+  // ✅ ดึงข้อมูลคำถามมาแสดง
+  selectedQuestionText.value = questions.value.find(q => q.id === questionId)?.question_text || "ไม่พบคำถาม";
+
+  // ✅ อ้างอิงถึง path ที่ถูกต้อง: /users/{userId}/classroom/{classroomId}/questions/{questionId}/answers/
+  const answersRef = firestore
+    .collection("users").doc(user.value.uid) // 🔥 เพิ่ม userId เข้าไป
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId)
+    .collection("answers");
+
+  try {
+    const snapshot = await answersRef.get();
+    console.log("📢 จำนวนเอกสารที่ดึงมา:", snapshot.size);  // ตรวจสอบข้อมูลที่ได้
+
+    answers.value = snapshot.docs.map(doc => ({
+      id: doc.id, 
+      std_name: doc.data().std_name || "ไม่ระบุชื่อ",
+      text: doc.data().text || "ไม่มีคำตอบ",
+      time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
+    }));
+
+    console.log("📢 คำตอบที่โหลดมา:", answers.value); // ✅ ตรวจสอบค่าที่ได้
+
+    // ✅ ถ้าไม่มีคำตอบ ให้แจ้งเตือน
+    if (answers.value.length === 0) {
+      alert("ยังไม่มีคำตอบสำหรับคำถามนี้");
+      return;
+    }
+
+    // ✅ เปิด Modal แสดงคำตอบ
+    const modalElement = document.getElementById("viewAnswersModal");
+    if (modalElement) {
+      new bootstrap.Modal(modalElement).show();
+    }
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการดึงคำตอบ:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถโหลดคำตอบได้!");
+  }
+}
+
+function formatTimestamp(timestamp) {
+  if (!timestamp || !timestamp.toDate) return "ไม่มีข้อมูลเวลา";
+  
+  const date = timestamp.toDate();
+  return date.toLocaleString("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
 
           onMounted(() => {
             auth.onAuthStateChanged(async (loggedUser) => {
@@ -847,6 +1212,18 @@ async function signInWithGoogle() {
           });
 
           return {
+            answers,
+            formatTimestamp,
+            viewAnswers,
+            questions,
+            deleteQuestion,
+            fetchQuestions,
+            closeCreateQuestionModal,
+            saveQuestion,
+            openCreateQuestionModal,
+            createQuestionModal,
+            newQuestionText,
+            currentClassroomId,
             user,
             userName,
             userPhoto,
@@ -880,7 +1257,7 @@ async function signInWithGoogle() {
             closeCheckin,
             saveCheckin,
             removeStudent,
-
+              
           };
         }
       }).mount("#app");
