@@ -75,7 +75,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">
+        <a class="navbar-brand" href="/">
           <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
         </a>
         <div v-if="user" class="d-flex align-items-center">
@@ -160,7 +160,7 @@
               <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" class="card-img-top"
                 alt="classroom image" style="height: 200px; object-fit: cover;">
               <div class="card-body">
-                <h5 class="card-title">{{ classroom.info.name }}</h5>
+                <h1 class="card-title"><b>{{ classroom.info.name }}</b></h1>
                 <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
                 <div class="btn-group w-100">
                   <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
@@ -208,6 +208,7 @@
             </button>
             
             <!-- พื้นที่แสดงคำถาม -->
+<!-- ตารางข้อมูลคำถาม -->
 <div class="mt-3">
   <h4>📌 รายการคำถาม</h4>
   <table class="table">
@@ -215,18 +216,18 @@
       <tr>
         <th>ลำดับ</th>
         <th>คำถาม</th>
-        <th>จัดการ</th>
+        <th class="text-end">จัดการ</th> <!-- เปลี่ยน class ของคอลัมน์นี้ให้ใช้ text-end เพื่อให้เนื้อหาของคอลัมน์อยู่ขวา -->
       </tr>
     </thead>
     <tbody>
       <tr v-for="(question, index) in questions" :key="question.id">
         <td>{{ index + 1 }}</td>
         <td>{{ question.question_text }}</td>
-        <td>
-          <button class="btn btn-info btn-sm" @click="viewAnswers(question.id)">
+        <td class="text-end"> <!-- เพิ่ม class text-end สำหรับให้ปุ่มอยู่ชิดขวา -->
+          <button class="btn btn-success btn-sm" @click="viewAnswers(question.id)">
             <i class="fas fa-eye"></i> ดูคำตอบ
           </button>
-          <button class="btn btn-danger btn-sm" @click="deleteQuestion(question.id)" style="margin-left: 8px;">
+          <button class="btn btn-danger btn-sm ms-2" @click="deleteQuestion(question.id)">
             <i class="fas fa-trash"></i> ลบ
           </button>
         </td>
@@ -614,13 +615,16 @@
     return;  // ถ้าไม่พบข้อมูลใดๆ ให้หยุดทำงาน
   }
 
-  // เก็บข้อมูลนักเรียนใน students array
-  students.value = snapshot.docs.map((doc, index) => ({
-    id: doc.id,  // id ของนักเรียน
-    std_id: doc.data().std_id,  // รหัสนักเรียน
-    std_name: doc.data().std_name,  // ชื่อนักเรียน
-    status: doc.data().status,  // สถานะนักเรียน
-  }));
+  // เก็บข้อมูลนักเรียนใน students array โดยกรองออกข้อมูลที่มี placeholder: true
+  students.value = snapshot.docs
+    .map((doc, index) => ({
+      id: doc.id,  // id ของนักเรียน
+      std_id: doc.data().std_id,  // รหัสนักเรียน
+      std_name: doc.data().std_name,  // ชื่อนักเรียน
+      status: doc.data().status,  // สถานะนักเรียน
+      placeholder: doc.data().placeholder // placeholder
+    }))
+    .filter(student => !student.placeholder); // กรองข้อมูลที่มี placeholder: true ออก
 
   console.log("Fetched students:", students.value);  // ตรวจสอบข้อมูลที่ดึงมา
 }
