@@ -18,7 +18,7 @@ export default function Home() {
       <Text style={{ fontSize: 20, fontWeight: "bold" }}>ยินดีต้อนรับ</Text>
       {user ? <Text>อีเมล: {user.email}</Text> : <Text>ไม่พบข้อมูลผู้ใช้</Text>}
       
-      <Button title="เพิ่มวิชา" onPress={() => router.push("/add-subject")} />
+      <Button title="ดูรายวิชา" onPress={() => router.push("/add-subject")} />
       <Button title="สแกน QR Code" onPress={() => router.push("/scan-qr")} />
       <Button title="ออกจากระบบ" onPress={handleLogout} color="red" />
     </View>

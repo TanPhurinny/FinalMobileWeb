@@ -95,6 +95,8 @@ export default function UsersList() {
       Alert.alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
     }
   };
+  
+  
 
   // ✅ ฟังก์ชันค้นหาชื่อจากอีเมลใน Firestore
 const getUserNameByEmail = async (email: string) => {
@@ -135,100 +137,91 @@ const getUserNameByEmail = async (email: string) => {
   };
 
 
-//ฟังก์ชั่นลบ
 
-const deleteCheckInByUser = async (ownerId: string, classroomId: string, targetStdID: string) => {
-  try {
-    // ✅ Path ของ `checkin` ที่ต้องการลบ
-    const checkInRef = doc(firestore, "users", ownerId, "classroom", classroomId, "checkin", targetStdID);
-    
-    // ✅ ตรวจสอบว่าเอกสาร `checkin` มีอยู่จริงหรือไม่
-    const checkInSnap = await getDoc(checkInRef);
-    if (checkInSnap.exists()) {
-      await deleteDoc(checkInRef); // ลบ `checkin`
-      console.log(`ลบข้อมูลเช็คอินของนักเรียน: ${targetStdID}`);
-    } else {
-      console.log("ไม่พบข้อมูลเช็คอินของนักเรียน");
-    }
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการลบข้อมูลเช็คอิน:", error);
-  }
-};
+  // ฟังก์ชันเพิ่มข้อมูลวิชาใหม่ลงในคอลเล็กชัน "subj" และเพิ่มข้อมูลใน "students"
+  const addClassroomToSubj = async (classroom: Classroom) => {
+    const user = await getCurrentUser(); // ใช้ข้อมูลของผู้ใช้งานที่กำลังล็อกอิน
+    if (!user) return; // ถ้าไม่ได้ล็อกอิน ให้หยุดการทำงาน
 
-const deleteStudentByStdID = async (ownerId: string, classroomId: string, targetStdID: string) => {
-  try {
-    // ✅ ดึงข้อมูล `students`
-    const studentsRef = collection(firestore, "users", ownerId, "classroom", classroomId, "students");
-    const studentsSnapshot = await getDocs(studentsRef);
+    const userId = user.id; // ID ของผู้ใช้งานที่กำลังล็อกอิน
 
-    if (studentsSnapshot.empty) {
-      console.log("ไม่พบข้อมูลนักเรียน");
-      return;
+    // ตรวจสอบว่ามีวิชานี้ใน subjClassrooms หรือไม่
+    const isClassroomExists = subjClassrooms.some((subj) => subj.code === classroom.code);
+
+    if (isClassroomExists) {
+      Alert.alert("วิชานี้ถูกเพิ่มไปแล้ว", "คุณไม่สามารถเพิ่มวิชานี้ซ้ำได้");
+      return; // หากมีวิชานี้อยู่แล้ว ให้หยุดการทำงาน
     }
 
-    // ✅ กรองหาเอกสารของ `targetStdID`
-    const studentDocsToDelete = studentsSnapshot.docs.filter(doc => doc.data().stdID === targetStdID);
+    try {
+      await addDoc(collection(firestore, "users", userId, "subj"), {
+        code: classroom.code,
+        name: classroom.name,
+        owner: classroom.owner,
+        classroomid : classroom.id
+      });
 
-    if (studentDocsToDelete.length === 0) {
-      console.log("ไม่พบเอกสารนักเรียนที่ตรงกับ stdID");
-      return;
+      // เพิ่มข้อมูลในคอลเล็กชัน "students" สำหรับวิชานี้ (ภายใต้การจัดการของเจ้าของวิชา)
+      await addDoc(collection(firestore, "users", classroom.owner, "classroom", classroom.id, "students"), {
+        name: user.name, // ชื่อของผู้ใช้งานที่กำลังล็อกอิน
+        email: user.email, // อีเมลของผู้ใช้งานที่กำลังล็อกอิน
+        stdID: user.id // ID ของผู้ใช้งานที่กำลังล็อกอิน
+      });
+
+      // ดึงข้อมูลล่าสุดจากคอลเล็กชัน "subj" หลังจากเพิ่มเสร็จ
+      const subjSnapshot = await getDocs(collection(firestore, "users", userId, "subj"));
+      const updatedSubjList = subjSnapshot.docs.map((subjDoc) => {
+        const subjData = subjDoc.data();
+        return {
+          id: subjDoc.id,
+          code: subjData.code,
+          name: subjData.name,
+          owner: subjData.owner,
+          classroomId : subjData.classroomid
+        };
+      });
+
+      
+      setSubjClassrooms(updatedSubjList);
+      router.push("/add-subject")
+      Alert.alert("เพิ่มข้อมูลสำเร็จ", `วิชา ${classroom.name} ถูกเพิ่มเรียบร้อยแล้ว`);
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาดในการเพิ่มวิชา", error);
+      Alert.alert("ไม่สามารถเพิ่มวิชาได้");
+    }
+  };
+
+  // ฟังก์ชันค้นหาวิชาตามรหัสที่กรอก
+  const searchClassrooms = async () => {
+    const filteredClassrooms: User[] = []; // กำหนดประเภทของ filteredClassrooms
+
+    // ค้นหาวิชาตามรหัสที่กรอก
+    for (const user of users) {
+      const foundClassrooms = user.classrooms.filter((classroom) => classroom.code === searchCode);
+      if (foundClassrooms.length > 0) {
+        const classroomsWithOwnerName = await Promise.all(
+          foundClassrooms.map(async (classroom) => {
+            const ownerName = await getOwnerName(classroom.owner); // เรียกฟังก์ชันเพื่อค้นหาชื่อเจ้าของ
+            return {
+              ...classroom,
+              ownerName, // เพิ่มชื่อเจ้าของเข้าไปในข้อมูลวิชา
+            };
+          })
+        );
+
+        filteredClassrooms.push({
+          ...user,
+          classrooms: classroomsWithOwnerName,
+        });
+      }
     }
 
-    // ✅ ลบเอกสาร `students`
-    for (const docToDelete of studentDocsToDelete) {
-      await deleteDoc(docToDelete.ref);
-      console.log(`ลบเอกสารนักเรียน: ${docToDelete.id}`);
+    if (filteredClassrooms.length === 0) {
+      Alert.alert("ไม่พบวิชาที่มีรหัสนี้ในระบบ");
     }
 
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการลบข้อมูลนักเรียน:", error);
-  }
-};
-
-const deleteSubjectFromUser = async (userId: string, subjectId: string) => {
-  try {
-    // ✅ ลบข้อมูลจาก `subj`
-    const subjDocRef = doc(firestore, "users", userId, "subj", subjectId);
-    await deleteDoc(subjDocRef);
-    console.log(`ลบวิชา ${subjectId} เสร็จสิ้น`);
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการลบวิชา", error);
-  }
-};
-
-const deleteClassroomFromSubj = async (userId: string, classroomId: string, ownerId: string, subjId: string) => {
-  try {
-    // ✅ 1. ลบข้อมูล `checkin` ก่อน
-    await deleteCheckInByUser(ownerId, classroomId, userId);
-
-    // ✅ 2. ลบ `students`
-    await deleteStudentByStdID(ownerId, classroomId, userId);
-
-    // ✅ 3. ลบ `subj`
-    await deleteSubjectFromUser(userId, subjId);
-
-    // ✅ 4. อัปเดตรายการวิชาที่เหลืออยู่
-    const subjSnapshot = await getDocs(collection(firestore, "users", userId, "subj"));
-    const updatedSubjList = subjSnapshot.docs.map((subjDoc) => {
-      const subjData = subjDoc.data();
-      return {
-        id: subjDoc.id,
-        code: subjData.code,
-        name: subjData.name,
-        owner: subjData.owner,
-        classroomId: subjData.classroomid
-      };
-    });
-
-    setSubjClassrooms(updatedSubjList);
-
-    Alert.alert("ลบข้อมูลสำเร็จ", "วิชาได้ถูกลบออกจากรายการแล้ว");
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการลบวิชา", error);
-    Alert.alert("ไม่สามารถลบวิชาได้");
-  }
-};
-
+    setClassrooms(filteredClassrooms);
+  };
 
   // ฟังก์ชันค้นหาชื่อเจ้าของวิชา
   const getOwnerName = async (ownerId: string) => {
@@ -280,57 +273,50 @@ const deleteClassroomFromSubj = async (userId: string, classroomId: string, owne
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+      <Text style={{ fontSize: 18, fontWeight: "bold" }}>ค้นหาวิชา</Text>
 
-      {/* แสดงข้อมูลวิชาที่ผู้ใช้งานเพิ่มไปแล้ว */}
-      <Text style={{ fontSize: 16, marginVertical: 10 }}>วิชาเรียนของคุณ:</Text>
-      {subjClassrooms.length === 0 ? (
-        <Text>คุณยังไม่ได้เพิ่มวิชา</Text>
+      <TextInput
+        style={{
+          borderWidth: 1,
+          width: 200,
+          marginVertical: 10,
+          padding: 5,
+          borderRadius: 5,
+          textAlign: "center",
+        }}
+        placeholder="กรอกรหัสวิชา"
+        value={searchCode}
+        onChangeText={setSearchCode}
+      />
+      <Button title="ค้นหา" onPress={searchClassrooms} />
+
+      {/* แสดงข้อมูลวิชาที่ค้นพบ */}
+      <Text style={{ fontSize: 16, marginVertical: 10 }}>วิชาที่ค้นพบ:</Text>
+      {classrooms.length === 0 ? (
+        <Text style={{ marginVertical: 10, color: "gray" }}>ไม่มีวิชาในระบบที่ตรงกับรหัสที่กรอก</Text>
       ) : (
         <FlatList
-          data={subjClassrooms}
+          data={classrooms}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={{ marginVertical: 5 }}>
-              <Text>วิชา: {item.name} (รหัสวิชา: {item.code})</Text>
-              <Text>อาจารย์ : {ownerNames[item.owner] || "กำลังโหลด..."}</Text>
-              <Button
-  title="เช็คอิน"
-  onPress={() =>
-    router.push({
-      pathname: "/check-in",
-      params: { subjectId: item.id, subjectName: item.name },
-    })
-  }
-/>
-
-              <TouchableOpacity
-  style={{
-    backgroundColor: "red", // กำหนดสีแดง
-    padding: 10,
-    marginTop: 5,
-    borderRadius: 5,
-  }}
-  
-  onPress={async() => {
-    const currentUser = await getCurrentUser(); // รับข้อมูลผู้ใช้งานที่กำลังล็อกอิน
-    if (currentUser) {
-      console.log("🟢 Checking classroomId before deleting:", item.classroomId);
-      deleteClassroomFromSubj(currentUser.id, item.classroomId, item.owner, item.id); // ส่ง classroomId ไป
-    } else {
-      Alert.alert("ผู้ใช้งานไม่ได้ล็อกอิน");
-    }
-  }}
->
-  <Text style={{ color: "white" , margin:"auto"}}>ลบวิชา</Text>
-</TouchableOpacity>
+            <View style={{ marginVertical: 10, width: 250 }}>
+              <Text>{item.name} - {item.email}</Text>
+              {item.classrooms.map((classroom) => (
+                <View key={classroom.id} style={{ marginVertical: 5 }}>
+                  <Text>วิชา: {classroom.name} (รหัสวิชา: {classroom.code})</Text>
+                  <Text>เจ้าของ: {classroom.ownerName}</Text>
+                  <Button
+                    title="เพิ่มวิชา"
+                    onPress={() => addClassroomToSubj(classroom)}
+                  />
+                </View>
+              ))}
             </View>
           )}
         />
       )}
 
-      <Button title="เพิ่มวิชาเรียน" onPress={() => router.push("/add-sub")} />
-        <br/>
-      <Button title="กลับหน้าหลัก" onPress={() => router.push("/")} />
+      <Button title="กลับหน้ารายวิชา" onPress={() => router.push("/add-subject")} />
     </View>
   );
 }
