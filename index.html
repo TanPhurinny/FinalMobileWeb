@@ -561,7 +561,7 @@
                 <th>วันเวลา</th>
                 <th>คะแนน</th>
                 <th>สถานะ</th>
-                <th>จัดการ</th> <!-- เพิ่มคอลัมน์สำหรับปุ่ม "แก้ไข" -->
+                <th class="text-end">จัดการ</th> <!-- เพิ่มคอลัมน์สำหรับปุ่ม "แก้ไข" -->
               </tr>
             </thead>
             <tbody>
@@ -569,16 +569,33 @@
                 <td>{{ index + 1 }}</td>
                 <td>{{ student.std_id }}</td>
                 <td>{{ student.std_name }}</td>
-                <td>{{ student.std_mark }}</td>
-                <td>{{ student.date }}</td>
-                <td>{{ student.std_score }}</td>
-                <td>{{ student.status }}</td>
                 <td>
-                  <!-- เพิ่มปุ่ม "แก้ไข" ในช่องสุดท้าย -->
+                  <input type="text" v-model="student.std_mark" v-if="student.isEditing" class="form-control"> <!-- แสดงช่องกรอกหมายเหตุเมื่ออยู่ในโหมดแก้ไข -->
+                  <span v-else>{{ student.std_mark }}</span> <!-- แสดงค่าปัจจุบัน -->
+                </td>
+                <td>{{ student.date }}</td>
+                <td>
+                  <input type="number" v-model="student.std_score" v-if="student.isEditing" class="form-control"> <!-- แสดงช่องกรอกคะแนนเมื่ออยู่ในโหมดแก้ไข -->
+                  <span v-else>{{ student.std_score }}</span> <!-- แสดงค่าปัจจุบัน -->
+                </td>
+                <td>
+                  <select v-model="student.status" v-if="student.isEditing" class="form-control">
+                    <option value="เช็คชื่อแล้ว">เช็คชื่อแล้ว</option>
+                    <option value="เช็คชื่อสาย">เช็คชื่อสาย</option>
+                  </select>
+                  <span v-else>{{ student.status }}</span> <!-- แสดงสถานะปัจจุบัน -->
+                </td>
+                <td class="text-end">
                   <button class="btn btn-warning btn-sm" @click="editStudent(student)">
                     <i class="fas fa-edit"></i> แก้ไข
                   </button>
                 </td>
+                <td class="text-end">
+                  <button class="btn btn-success btn-sm" @click="saveStudentChanges(student)" v-if="student.isEditing">
+                    <i class="fas fa-save"></i> บันทึก
+                  </button>
+                </td>
+                
               </tr>
             </tbody>
           </table>
@@ -719,6 +736,9 @@
   }
 }
 
+function editStudent(student) {
+  student.isEditing = true; // เปลี่ยนสถานะให้อยู่ในโหมดแก้ไข
+}
 
 function showCheckinDetailsModal() {
   const modalElement = document.getElementById("checkinDetailsModal");
@@ -753,7 +773,7 @@ async function fetchCheckinDetails(session) {
           std_id: studentData.std_id,
           std_name: studentData.std_name,
           std_mark: studentData.std_mark,
-          date: formatTimestamp(studentData.date),
+          date: (studentData.date),
           std_score: studentData.std_score,
           status: studentData.status === 0 ? "เช็คชื่อแล้ว" : "เช็คชื่อสาย"
         };
@@ -917,6 +937,15 @@ async function submitCheckin() {
   const checkinRef = firestore.collection("users").doc(user.value.uid)
     .collection("classroom").doc(currentClassroomId.value)
     .collection("checkin");
+
+  // ตรวจสอบว่ารหัสเช็คชื่อมีอยู่ในฐานข้อมูลหรือไม่
+  const checkinSnapshot = await checkinRef.where("code", "==", checkinCode.value).get();
+  
+  if (!checkinSnapshot.empty) {
+    // ถ้ามีการเช็คชื่อที่มีรหัสเดียวกันอยู่แล้ว
+    alert("รหัสเช็คชื่อนี้ซ้ำกับการเช็คชื่อก่อนหน้านี้ กรุณากรอกรหัสใหม่!");
+    return;
+  }
 
   // ดึงค่าล่าสุดของ `cno`
   const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
@@ -1431,12 +1460,16 @@ function viewAnswers(questionId) {
   answersRef.get()
     .then(snapshot => {
       if (!snapshot.empty) {
-        answers.value = snapshot.docs.map(doc => ({
-          id: doc.id,
-          std_name: doc.data().std_name,
-          text: doc.data().text,
-          time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
-        }));
+        // กรองคำตอบที่มี placeholder: true ออก
+        answers.value = snapshot.docs
+          .filter(doc => doc.data().placeholder !== true)  // กรองคำตอบที่มี placeholder: true
+          .map(doc => ({
+            id: doc.id,
+            std_name: doc.data().std_name,
+            text: doc.data().text,
+            time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
+          }));
+
         const modalElement = document.getElementById("viewAnswersModal");
         const modalInstance = new bootstrap.Modal(modalElement);
         modalInstance.show();
@@ -1461,6 +1494,33 @@ function formatTimestamp(timestamp) {
   });
 }
 
+async function saveStudentChanges(student) {
+  const studentRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin").doc(student.id) // เราใช้ student.id เป็น document ID
+    .collection("students").doc(student.id); // ตรวจสอบว่าใช้ ID ตรงกับ document ที่ Firestore
+
+  try {
+    const studentDoc = await studentRef.get();  // ตรวจสอบว่าเอกสารมีอยู่หรือไม่
+    if (!studentDoc.exists) {
+      alert("ไม่พบข้อมูลนักเรียนนี้ใน Firestore");
+      return;
+    }
+
+    // ถ้าเอกสารมีอยู่แล้ว ก็ทำการอัปเดต
+    await studentRef.update({
+      std_mark: student.std_mark,
+      std_score: student.std_score,
+      status: student.status
+    });
+
+    alert("บันทึกการเปลี่ยนแปลงสำเร็จ!");
+    student.isEditing = false; // ยกเลิกโหมดแก้ไข
+  } catch (error) {
+    console.error("Error saving student changes:", error);
+    alert("เกิดข้อผิดพลาดในการบันทึกการเปลี่ยนแปลง");
+  }
+}
 
           onMounted(() => {
             auth.onAuthStateChanged(async (loggedUser) => {
@@ -1477,6 +1537,8 @@ function formatTimestamp(timestamp) {
           });
 
           return {
+            editStudent,
+            saveStudentChanges,
             showCloseCheckinModal,
             submitCheckin,
             fetchCheckinDetails,
