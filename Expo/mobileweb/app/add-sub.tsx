@@ -19,6 +19,7 @@ type User = {
   id: string;
   email: string;
   name: string;
+  studentID: string;
   classrooms: Classroom[];
 };
 
@@ -79,6 +80,7 @@ export default function UsersList() {
           id: userId,
           email: data.email || "ไม่ระบุอีเมล",
           name: data.name || "ไม่ระบุชื่อ",
+          studentID: data.studentID|| "ไม่ระบุรหัสนักศึกษา",
           classrooms: classroomsList,
         });
   
@@ -124,17 +126,34 @@ const getUserNameByEmail = async (email: string) => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const userName = await getUserNameByEmail(user.email || "");
-      return {
-        name: userName || "ไม่ระบุชื่อ",  // ชื่อของผู้ใช้
-        email: user.email || "ไม่ระบุอีเมล",    // อีเมลของผู้ใช้งาน
-        id: user.uid,                            // UID ของผู้ใช้งาน
-      };
+      try {
+        // ดึงข้อมูลผู้ใช้จาก Firestore
+        const userDoc = await getDoc(doc(firestore, "users", user.uid));
+        console.log(user.uid)
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const studentID = userData?.studentId || "ไม่ระบุรหัสนักศึกษา"; // ดึงรหัสนักศึกษาจาก Firestore
+  
+          return {
+            name: userData?.name || "ไม่ระบุชื่อ",  // ชื่อของผู้ใช้
+            email: user.email || "ไม่ระบุอีเมล",    // อีเมลของผู้ใช้งาน
+            id: user.uid,
+            studentID: studentID, // ส่งรหัสนักศึกษาด้วย
+          };
+        } else {
+          console.log("ไม่พบข้อมูลผู้ใช้ใน Firestore");
+          return null;
+        }
+      } catch (error) {
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้จาก Firestore", error);
+        return null;
+      }
     } else {
       console.log("ผู้ใช้งานไม่ได้ล็อกอิน");
       return null;
     }
   };
+  
 
 
 
@@ -165,7 +184,8 @@ const getUserNameByEmail = async (email: string) => {
       await addDoc(collection(firestore, "users", classroom.owner, "classroom", classroom.id, "students"), {
         name: user.name, // ชื่อของผู้ใช้งานที่กำลังล็อกอิน
         email: user.email, // อีเมลของผู้ใช้งานที่กำลังล็อกอิน
-        stdID: user.id // ID ของผู้ใช้งานที่กำลังล็อกอิน
+        uID: user.id, // ID ของผู้ใช้งานที่กำลังล็อกอิน
+        studentId: user.studentID // รหัสนักศึกษาของผู้ใช้งาน
       });
 
       // ดึงข้อมูลล่าสุดจากคอลเล็กชัน "subj" หลังจากเพิ่มเสร็จ

@@ -167,7 +167,7 @@ const deleteStudentByStdID = async (ownerId: string, classroomId: string, target
     }
 
     // ✅ กรองหาเอกสารของ `targetStdID`
-    const studentDocsToDelete = studentsSnapshot.docs.filter(doc => doc.data().stdID === targetStdID);
+    const studentDocsToDelete = studentsSnapshot.docs.filter(doc => doc.data().uID === targetStdID);
 
     if (studentDocsToDelete.length === 0) {
       console.log("ไม่พบเอกสารนักเรียนที่ตรงกับ stdID");

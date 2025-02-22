@@ -12,12 +12,13 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [name, setName] = useState<string>(""); // สร้าง state สำหรับชื่อผู้ใช้
+  const [studentId, setStudentId] = useState<string>(""); // สร้าง state สำหรับรหัสนักศึกษา
   const router = useRouter();
 
   const handleRegister = async () => {
     try {
       // ตรวจสอบว่าชื่ออีเมลและรหัสผ่านถูกกรอกหรือไม่
-      if (!name || !email || !password) {
+      if (!name || !email || !password || !studentId) {
         Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน");
         return;
       }
@@ -30,6 +31,7 @@ export default function RegisterScreen() {
       await setDoc(doc(db, "users", user.uid), {
         email: email,
         name: name, // เก็บชื่อผู้ใช้ลงใน Firestore
+        studentId: studentId, // เก็บรหัสนักศึกษาลงใน Firestore
         photo: "", // สามารถเพิ่ม URL รูปภาพได้
       });
 
@@ -86,6 +88,20 @@ export default function RegisterScreen() {
         placeholderTextColor="gray"
         value={password}
         onChangeText={setPassword}
+      />
+
+      <TextInput
+        style={{
+          borderWidth: 1,
+          width: 200,
+          marginVertical: 10,
+          padding: 10,
+          borderRadius: 5,
+        }}
+        placeholder="กรอกรหัสนักศึกษา"
+        placeholderTextColor="gray"
+        value={studentId}
+        onChangeText={setStudentId}
       />
 
       <Button title="สมัครบัญชี" onPress={handleRegister} />
