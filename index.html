@@ -67,6 +67,7 @@
     body{
       font-family: myProjectFont;
     }
+
   </style>
 </head>
 
@@ -252,17 +253,20 @@
     <button class="btn btn-warning" @click="closeCheckin" style="margin-left: 8px;">
       <i class="fas fa-times-circle"></i> ปิดเช็คชื่อ
     </button>
-    <button class="btn btn-info" @click="showStudentList" style="margin-left: 8px;">
-      <i class="fas fa-users"></i> แสดงรายชื่อ
+    <!-- ปุ่มใหม่ที่เพิ่มเข้ามา -->
+    <button class="btn btn-info ms-2" @click="showCheckinDetailsModal">
+      <i class="fas fa-info-circle"></i> แสดงรายละเอียดเช็คชื่อ
     </button>
   </div>
 
-  <!-- ปุ่ม "QR Code" ชิดขวาและมีขนาดสั้น -->
-   <div>
-  <button class="btn btn-primary ms-auto w-auto" @click="showQRCode(currentClassroomId)">
-    <i class="fas fa-qrcode"></i> แสดง QR Code
-  </button>
-</div>
+  <div>
+    <button class="btn btn-info ms-auto" @click="showStudentList">
+      <i class="fas fa-users"></i> แสดงรายชื่อ
+    </button>
+    <button class="btn btn-primary ms-2" @click="showQRCode(currentClassroomId)">
+      <i class="fas fa-qrcode"></i> แสดง QR Code
+    </button>
+  </div>
 </div>
 
 
@@ -484,6 +488,151 @@
     </div>
   </div>
 </div>
+
+<!-- รายละเอียดการเช็คชื่อ Modal -->
+<div class="modal fade" id="checkinDetailsModal" tabindex="-1" aria-labelledby="checkinDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinDetailsModalLabel">รายละเอียดการเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div v-if="checkinSessions.length > 0">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>สถานะ</th>
+                <th>รหัสเช็คชื่อ</th>
+                <th class="text-end">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(session, index) in checkinSessions" :key="session.id">
+                <td>{{ index + 1 }}</td>
+                <!-- เปลี่ยนสถานะและเพิ่มคลาสตามค่า status -->
+                <td :class="{
+                  'status-closed': session.status === 1,
+                  'status-open': session.status === 0
+                }">
+                  <span v-if="session.status === 1" style="background-color: red; color: white; padding: 2px; border-radius: 5px;">ปิดการเช็คชื่อแล้ว</span>
+                  <span v-else style="background-color: green; color:  white; padding: 2px; border-radius: 5px; ">เปิดให้เช็คชื่อ</span>
+                </td>
+                <td>{{ session.code }}</td>  <!-- แสดงรหัสเช็คชื่อ -->
+                <td class="text-end">
+                  <button class="btn btn-primary btn-sm" @click="fetchCheckinDetails(session)">
+                    <i class="fas fa-eye"></i> ดูรายละเอียด
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else>
+          <p>ไม่พบข้อมูลการเช็คชื่อ</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- รายละเอียดการเช็คชื่อ Modal ตรงกดปุ่มดูรายละเอียดจากข้างใน -->
+<div class="modal fade" id="checkinDetailsModalView" tabindex="-1" aria-labelledby="checkinDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" style="max-width: 90%; width: 90%;"> <!-- ใช้ modal-lg และปรับขนาดตามที่ต้องการ -->
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinDetailsModalLabel">รายละเอียดการเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div v-if="students.length > 0">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัสนักศึกษา</th>
+                <th>ชื่อ</th>
+                <th>หมายเหตุ</th>
+                <th>วันเวลา</th>
+                <th>คะแนน</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th> <!-- เพิ่มคอลัมน์สำหรับปุ่ม "แก้ไข" -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(student, index) in students" :key="student.id">
+                <td>{{ index + 1 }}</td>
+                <td>{{ student.std_id }}</td>
+                <td>{{ student.std_name }}</td>
+                <td>{{ student.std_mark }}</td>
+                <td>{{ student.date }}</td>
+                <td>{{ student.std_score }}</td>
+                <td>{{ student.status }}</td>
+                <td>
+                  <!-- เพิ่มปุ่ม "แก้ไข" ในช่องสุดท้าย -->
+                  <button class="btn btn-warning btn-sm" @click="editStudent(student)">
+                    <i class="fas fa-edit"></i> แก้ไข
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else>
+          <p>ไม่พบข้อมูลการเช็คชื่อ</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal สำหรับกรอกรหัสเช็คชื่อ -->
+<div class="modal fade" id="checkinModal" tabindex="-1" aria-labelledby="checkinModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinModalLabel">กรอกรหัสเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label for="checkinCode" class="form-label">รหัสเช็คชื่อ:</label>
+        <input type="text" id="checkinCode" class="form-control" v-model="checkinCode" placeholder="กรอกรหัสเช็คชื่อ">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" @click="submitCheckin">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แสดงข้อความเมื่อปิดการเช็คชื่อ -->
+<div class="modal fade" id="closeCheckinModal" tabindex="-1" aria-labelledby="closeCheckinModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="closeCheckinModalLabel">การเช็คชื่อถูกปิด</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="checkinMessage"></p> <!-- ข้อความที่จะเปลี่ยนแปลง -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script type="module">
   import { ref } from 'vue';
   // โค้ดอื่นๆ ที่ใช้ Vue
@@ -512,6 +661,7 @@
       createApp({
         
         setup() {
+          
           const answers = ref([]);
           const selectedQuestionText = ref("");
           const questions = ref([]);
@@ -538,11 +688,94 @@
 
           const students = ref([]);
           const showStudents = ref(false);
-          const checkinSession = ref(null);
+          const checkinSessions = ref({});
           const showScores = ref(false);
           const scores = ref([]);
 
 
+          async function fetchCheckinSessions() {
+  if (!currentClassroomId.value || !user.value) return; // ตรวจสอบว่ามีการเลือกห้องเรียนและผู้ใช้
+
+  // ดึงข้อมูลทั้งหมดจาก collection checkin/{cno}
+  const checkinRef = firestore.collection("users")
+    .doc(user.value.uid)  // ใช้ UID ของผู้ใช้
+    .collection("classroom")
+    .doc(currentClassroomId.value)  // ใช้ ID ของห้องเรียน
+    .collection("checkin");  // ไม่ต้องระบุ doc ID เพื่อดึงทุกๆ document ใน collection
+
+  const snapshot = await checkinRef.get();  // ดึงข้อมูลทั้งหมดจาก Firestore
+
+  if (!snapshot.empty) {
+    // กรองข้อมูลออกเอกสารที่มี placeholder: true
+    checkinSessions.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรอง document ที่มี placeholder: true
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()  // แปลงข้อมูลใน document เป็น object
+      }));
+  } else {
+    console.log("ไม่พบข้อมูลการเช็คชื่อ");
+    checkinSessions.value = [];  // ถ้าไม่มีข้อมูล ก็คืนค่าเป็น array เปล่า
+  }
+}
+
+
+function showCheckinDetailsModal() {
+  const modalElement = document.getElementById("checkinDetailsModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+  fetchCheckinSessions();  // ดึงข้อมูลจาก Firestore ทุกครั้งที่เปิด Modal
+}
+
+function viewCheckinDetails(session) {
+  console.log(`กำลังดูรายละเอียดการเช็คชื่อครั้งที่: ${session.cno}`);
+  // ดึงข้อมูลที่เกี่ยวข้องกับ session.cno จาก Firestore หากต้องการ
+  fetchCheckinDetails(session);
+}
+
+async function fetchCheckinDetails(session) {
+  if (!currentClassroomId.value || !session.id) return;
+
+  const studentRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin").doc(session.id)  // ใช้ session.id เพื่อดึงข้อมูลเช็คชื่อ
+    .collection("students");
+
+  const snapshot = await studentRef.get();
+  
+  if (!snapshot.empty) {
+    students.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรอง document ที่มี placeholder: true ออก
+      .map((doc, index) => {
+        const studentData = doc.data();
+        return {
+          id: doc.id,
+          std_id: studentData.std_id,
+          std_name: studentData.std_name,
+          std_mark: studentData.std_mark,
+          date: formatTimestamp(studentData.date),
+          std_score: studentData.std_score,
+          status: studentData.status === 0 ? "เช็คชื่อแล้ว" : "เช็คชื่อสาย"
+        };
+      });
+  } else {
+    console.log("ไม่พบข้อมูลนักเรียนที่เช็คชื่อ");
+    students.value = [];
+  }
+
+  // ปิด Modal "แสดงรายละเอียดเช็คชื่อ" ก่อนเปิด Modal ใหม่
+  const checkinDetailsModalElement = document.getElementById("checkinDetailsModal");
+  const checkinDetailsModalInstance = bootstrap.Modal.getInstance(checkinDetailsModalElement);
+  if (checkinDetailsModalInstance) {
+    checkinDetailsModalInstance.hide(); // ปิด Modal นี้ก่อน
+  }
+
+  // เปิด Modal "ดูรายละเอียด" อันนี้จากข้างในปุ่ม แสดงรายละเอียดนะ อย่าดูผิดอัน
+  const modalElement = document.getElementById("checkinDetailsModalView");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
+          
 
           // ดึงข้อมูลนักเรียนที่เช็คชื่อจาก Firestore
           async function fetchScores() {
@@ -632,7 +865,7 @@
 
 
 
-          async function openCheckin() {
+async function openCheckin() {
   if (!currentClassroomId.value || !user.value) return;
 
   const checkinRef = firestore.collection("users").doc(user.value.uid)
@@ -652,7 +885,13 @@
 
   // ❌ ถ้ายังไม่ปิดการเช็คชื่อรอบที่แล้ว ไม่ให้เปิดใหม่
   if (lastStatus === 0) {
-    alert(`ให้คุณปิดเช็คชื่อครั้งที่ ${cno - 1} ก่อน`);
+    showCheckinErrorModal(`ให้คุณปิดเช็คชื่อครั้งที่ ${cno - 1} ก่อน`);
+    return;
+  }
+
+  // ❌ ถ้าเช็คชื่อเปิดอยู่แล้ว
+  if (lastStatus === 0) {
+    alert("ยังไม่ได้ปิดการเช็คชื่อรอบก่อนหน้า");
     return;
   }
 
@@ -662,33 +901,52 @@
     await checkinRef.doc(doc.id).delete();
   });
 
-  // รับค่ารหัสจากผู้ใช้
-  const checkinCode = prompt("กรอกรหัสเช็คชื่อ:");
+  // ✅ เปิด Modal ให้กรอกรหัสเช็คชื่อ
+  const modalElement = document.getElementById("checkinModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
 
-  if (!checkinCode) {
-    alert("คุณต้องกรอกรหัสเช็คชื่อ!");
+// ฟังก์ชันที่จะเรียกเมื่อกรอกรหัสเช็คชื่อใน Modal
+async function submitCheckin() {
+  if (!checkinCode.value.trim()) {
+    alert("กรุณากรอกรหัสเช็คชื่อ");
     return;
   }
 
-  // ✅ **บันทึกข้อมูล `checkin/{cno}`**
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
+
+  // ดึงค่าล่าสุดของ `cno`
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+  let cno = latestCheckinDoc.empty ? 1 : latestCheckinDoc.docs[0].data().cno + 1;
+
+  // บันทึกข้อมูล `checkin/{cno}`
   await checkinRef.doc(cno.toString()).set({
     cno: cno,
-    code: checkinCode,
+    code: checkinCode.value,
     date: firebase.firestore.FieldValue.serverTimestamp(),
-    status: 0 // ตั้งค่า status เป็น 0 (ยังไม่ปิด)
+    status: 0  // ตั้งค่า status เป็น 0 (เช็คชื่อยังไม่ปิด)
   });
 
-  // ✅ **สร้าง collection `students` เปล่าๆ ข้างใน `{cno}`**
+  // สร้าง collection `students` เปล่าๆ ข้างใน `{cno}`
   await checkinRef.doc(cno.toString()).collection("students").add({ placeholder: true });
 
   alert(`เปิดเช็คชื่อครั้งที่ ${cno} สำเร็จ!`);
+
+  // รีเซ็ตค่า checkinCode และปิด Modal
+  checkinCode.value = "";
+  const modalElement = document.getElementById("checkinModal");
+  const modalInstance = bootstrap.Modal.getInstance(modalElement);
+  modalInstance.hide();
 }
 
 
 
 
           // ✅ ฟังก์ชันปิดการเช็คชื่อ
-async function closeCheckin() {
+          async function closeCheckin() {
   if (!currentClassroomId.value || !user.value) return;
 
   const checkinRef = firestore.collection("users").doc(user.value.uid)
@@ -699,7 +957,7 @@ async function closeCheckin() {
   const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
 
   if (latestCheckinDoc.empty) {
-    alert("ยังไม่มีการเปิดเช็คชื่อ!");
+    showCloseCheckinModal("ยังไม่มีการเปิดเช็คชื่อ!");
     return;
   }
 
@@ -708,7 +966,7 @@ async function closeCheckin() {
 
   // ❌ ถ้าเช็คชื่อปิดแล้ว ไม่ต้องทำอะไร
   if (lastCheckin.data().status === 1) {
-    alert(`การเช็คชื่อครั้งที่ ${cno} ถูกปิดไปแล้ว`);
+    showCloseCheckinModal(`การเช็คชื่อครั้งที่ ${cno} ถูกปิดไปแล้ว`);
     return;
   }
 
@@ -717,7 +975,15 @@ async function closeCheckin() {
     status: 1
   });
 
-  alert(`ปิดการเช็คชื่อครั้งที่ ${cno} แล้ว`);
+  showCloseCheckinModal(`ปิดการเช็คชื่อครั้งที่ ${cno} แล้ว`);
+}
+
+function showCloseCheckinModal(message) {
+  const messageElement = document.getElementById("checkinMessage");
+  messageElement.textContent = message; // แสดงข้อความที่ต้องการ
+  const modalElement = document.getElementById("closeCheckinModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
 }
 
           async function saveCheckin() {
@@ -1016,25 +1282,33 @@ async function signInWithGoogle() {
             }
           }
 
-          async function showQRCode(classroomId) {
-            const qrCodeElement = document.getElementById("qrcode");
-            qrCodeElement.innerHTML = "";
+            async function showQRCode(classroomId) {
+    if (!classroomId || !currentClassroom.value) {
+      alert("ไม่สามารถแสดง QR Code ได้ กรุณาเลือกห้องเรียนก่อน!");
+      return;
+    }
 
-            const qrData = JSON.stringify({
-              classroomId: classroomId,
-              className: currentClassroom.value.info.name,
-              classCode: currentClassroom.value.info.code
-            });
+    const qrCodeElement = document.getElementById("qrcode");
+    qrCodeElement.innerHTML = "";
 
-            new QRCode(qrCodeElement, {
-              text: qrData,
-              width: 200,
-              height: 200,
-            });
+    const qrData = JSON.stringify({
+      classroomId: classroomId,
+      className: currentClassroom.value.info.name, 
+      classCode: currentClassroom.value.info.code  
+    });
 
-            const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
-            modal.show();
-          }
+
+    new QRCode(qrCodeElement, {
+      text: qrData,
+      width: 200,
+      height: 200,
+      correctLevel: QRCode.CorrectLevel.H 
+    });
+
+    const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+    modal.show();
+  }
+
 
           function downloadQRCode() {
             const canvas = document.querySelector("#qrcode canvas");
@@ -1141,52 +1415,36 @@ async function deleteCollection(collectionRef) {
   await batch.commit();
 }
 
-async function viewAnswers(questionId) {
+function viewAnswers(questionId) {
   console.log("📌 กำลังดึงคำตอบของคำถาม ID:", questionId);
-
+  
   if (!currentClassroomId.value || !user.value) return;
 
-  // ✅ รีเซ็ตค่าคำตอบก่อน
-  answers.value = [];  // ให้ค่า answers เป็น array เปล่า
-
-  // ✅ ดึงข้อมูลคำถามมาแสดง
   selectedQuestionText.value = questions.value.find(q => q.id === questionId)?.question_text || "ไม่พบคำถาม";
 
-  // ✅ อ้างอิงถึง path ที่ถูกต้อง: /users/{userId}/classroom/{classroomId}/questions/{questionId}/answers/
   const answersRef = firestore
-    .collection("users").doc(user.value.uid) // 🔥 เพิ่ม userId เข้าไป
+    .collection("users").doc(user.value.uid)
     .collection("classroom").doc(currentClassroomId.value)
     .collection("questions").doc(questionId)
     .collection("answers");
 
-  try {
-    const snapshot = await answersRef.get();
-    console.log("📢 จำนวนเอกสารที่ดึงมา:", snapshot.size);  // ตรวจสอบข้อมูลที่ได้
-
-    answers.value = snapshot.docs.map(doc => ({
-      id: doc.id, 
-      std_name: doc.data().std_name || "ไม่ระบุชื่อ",
-      text: doc.data().text || "ไม่มีคำตอบ",
-      time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
-    }));
-
-    console.log("📢 คำตอบที่โหลดมา:", answers.value); // ✅ ตรวจสอบค่าที่ได้
-
-    // ✅ ถ้าไม่มีคำตอบ ให้แจ้งเตือน
-    if (answers.value.length === 0) {
-      alert("ยังไม่มีคำตอบสำหรับคำถามนี้");
-      return;
-    }
-
-    // ✅ เปิด Modal แสดงคำตอบ
-    const modalElement = document.getElementById("viewAnswersModal");
-    if (modalElement) {
-      new bootstrap.Modal(modalElement).show();
-    }
-  } catch (error) {
-    console.error("❌ เกิดข้อผิดพลาดในการดึงคำตอบ:", error);
-    alert("เกิดข้อผิดพลาด ไม่สามารถโหลดคำตอบได้!");
-  }
+  answersRef.get()
+    .then(snapshot => {
+      if (!snapshot.empty) {
+        answers.value = snapshot.docs.map(doc => ({
+          id: doc.id,
+          std_name: doc.data().std_name,
+          text: doc.data().text,
+          time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
+        }));
+        const modalElement = document.getElementById("viewAnswersModal");
+        const modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
+      } else {
+        console.log("ไม่มีคำตอบสำหรับคำถามนี้");
+        alert("ยังไม่มีคำตอบสำหรับคำถามนี้");
+      }
+    });
 }
 
 function formatTimestamp(timestamp) {
@@ -1212,10 +1470,21 @@ function formatTimestamp(timestamp) {
                 userPhoto.value = loggedUser.photoURL || "";
                 await fetchClassrooms();
               }
+              if (currentClassroomId.value) {
+              fetchCheckinSessions();
+              }
             });
           });
 
           return {
+            showCloseCheckinModal,
+            submitCheckin,
+            fetchCheckinDetails,
+            checkinSessions,
+            showCheckinDetailsModal,
+            viewCheckinDetails,
+            checkinSessions,
+            showCheckinDetailsModal,
             answers,
             formatTimestamp,
             viewAnswers,
