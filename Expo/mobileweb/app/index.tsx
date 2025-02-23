@@ -19,7 +19,6 @@ export default function Home() {
       {user ? <Text>อีเมล: {user.email}</Text> : <Text>ไม่พบข้อมูลผู้ใช้</Text>}
       
       <Button title="ดูรายวิชา" onPress={() => router.push("/add-subject")} />
-      <Button title="สแกน QR Code" onPress={() => router.push("/scan-qr")} />
       <Button title="ออกจากระบบ" onPress={handleLogout} color="red" />
     </View>
   );

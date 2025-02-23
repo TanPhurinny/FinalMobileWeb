@@ -182,10 +182,11 @@ const getUserNameByEmail = async (email: string) => {
 
       // เพิ่มข้อมูลในคอลเล็กชัน "students" สำหรับวิชานี้ (ภายใต้การจัดการของเจ้าของวิชา)
       await addDoc(collection(firestore, "users", classroom.owner, "classroom", classroom.id, "students"), {
-        name: user.name, // ชื่อของผู้ใช้งานที่กำลังล็อกอิน
+        std_name: user.name, // ชื่อของผู้ใช้งานที่กำลังล็อกอิน
         email: user.email, // อีเมลของผู้ใช้งานที่กำลังล็อกอิน
         uID: user.id, // ID ของผู้ใช้งานที่กำลังล็อกอิน
-        studentId: user.studentID // รหัสนักศึกษาของผู้ใช้งาน
+        std_id: user.studentID, // รหัสนักศึกษาของผู้ใช้งาน
+        status : 2
       });
 
       // ดึงข้อมูลล่าสุดจากคอลเล็กชัน "subj" หลังจากเพิ่มเสร็จ
@@ -335,7 +336,7 @@ const getUserNameByEmail = async (email: string) => {
           )}
         />
       )}
-
+      <Button title="สแกน QR Code" onPress={() => router.push("/scan-qr")} />
       <Button title="กลับหน้ารายวิชา" onPress={() => router.push("/add-subject")} />
     </View>
   );

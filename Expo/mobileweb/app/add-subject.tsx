@@ -329,7 +329,9 @@ const deleteClassroomFromSubj = async (userId: string, classroomId: string, owne
       )}
 
       <Button title="เพิ่มวิชาเรียน" onPress={() => router.push("/add-sub")} />
-        <br/>
+      <Text>
+        
+      </Text>
       <Button title="กลับหน้าหลัก" onPress={() => router.push("/")} />
     </View>
   );

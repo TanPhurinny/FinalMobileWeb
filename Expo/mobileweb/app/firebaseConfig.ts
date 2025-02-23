@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore"; // นำเข้า Firesto
 
 // 🔥 ใส่ค่าจริงจาก Firebase Console
 const firebaseConfig = {
-  apiKey: "AIzaSyBK5wZT8xeSclSadPwWqD5t2Gp6uZ5OWyU",
-  authDomain: "testfirebase-80be9.firebaseapp.com",
-  projectId: "testfirebase-80be9",
-  storageBucket: "testfirebase-80be9.firebasestorage.app",
-  messagingSenderId: "507617350642",
-  appId: "1:507617350642:web:f809202fd2412b681e516b",
-  measurementId: "G-D0DFMN0YR9"
+  apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
+  authDomain: "finalmobileweb.firebaseapp.com",
+  projectId: "finalmobileweb",
+  storageBucket: "finalmobileweb.firebasestorage.app",
+  messagingSenderId: "763318502667",
+  appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
+  measurementId: "G-LSNZG1BMNT"
 };
 
 // ✅ เริ่มต้น Firebase App
