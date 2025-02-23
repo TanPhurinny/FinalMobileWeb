@@ -285,18 +285,23 @@
         <th>รหัสนักเรียน</th>
         <th>ชื่อนักเรียน</th>
         <th>สถานะ</th>
+        <th class="text-end">จัดการ</th>
       </tr>
     </thead>
     <tbody>
       <tr v-for="(student, index) in students" :key="student.id">
-        <td>{{ index + 1 }}</td>  <!-- แสดงลำดับ -->
+        <td>{{ index + 1 }}</td>  <!-- ลำดับ -->
         <td>{{ student.std_id }}</td>  <!-- รหัสนักเรียน -->
         <td>{{ student.std_name }}</td> <!-- ชื่อนักเรียน -->
         <td>
-          <!-- เช็คค่าของ status และแสดงข้อความ "นักศึกษา" ถ้าค่าเป็น 2 -->
           <span v-if="student.status === 2">นักศึกษา</span>
           <span v-else>สถานะไม่ระบุ</span>
-        </td> <!-- สถานะ -->
+        </td>
+        <td class="text-end">
+          <button class="btn btn-danger btn-sm" @click="deleteStudent(student.id)">
+            <i class="fas fa-trash"></i> ลบ
+          </button>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -1458,7 +1463,7 @@ async function deleteCollection(collectionRef) {
 
 function viewAnswers(questionId) {
   console.log("📌 กำลังดึงคำตอบของคำถาม ID:", questionId);
-  
+
   if (!currentClassroomId.value || !user.value) return;
 
   selectedQuestionText.value = questions.value.find(q => q.id === questionId)?.question_text || "ไม่พบคำถาม";
@@ -1469,27 +1474,24 @@ function viewAnswers(questionId) {
     .collection("questions").doc(questionId)
     .collection("answers");
 
-  answersRef.get()
-    .then(snapshot => {
-      if (!snapshot.empty) {
-        // กรองคำตอบที่มี placeholder: true ออก
-        answers.value = snapshot.docs
-          .filter(doc => doc.data().placeholder !== true)  // กรองคำตอบที่มี placeholder: true
-          .map(doc => ({
-            id: doc.id,
-            std_name: doc.data().std_name,
-            text: doc.data().text,
-            time: doc.data().time ?(doc.data().time) : "ไม่มีข้อมูลเวลา"
-          }));
+  // 🔥 ใช้ `onSnapshot()` เพื่ออัปเดตแบบ Real-time
+  answersRef.onSnapshot((snapshot) => {
+    answers.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรองคำตอบที่มี placeholder: true ออก
+      .map(doc => ({
+        id: doc.id,
+        std_name: doc.data().std_name,
+        text: doc.data().text,
+        time: doc.data().time ? (doc.data().time) : "ไม่มีข้อมูลเวลา"
+      }));
 
-        const modalElement = document.getElementById("viewAnswersModal");
-        const modalInstance = new bootstrap.Modal(modalElement);
-        modalInstance.show();
-      } else {
-        console.log("ไม่มีคำตอบสำหรับคำถามนี้");
-        alert("ยังไม่มีคำตอบสำหรับคำถามนี้");
-      }
-    });
+    console.log("📢 อัปเดตข้อมูลคำตอบแบบเรียลไทม์:", answers.value);
+  });
+
+  // เปิด Modal แสดงคำตอบ
+  const modalElement = document.getElementById("viewAnswersModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
 }
 
 function formatTimestamp(timestamp) {
@@ -1585,6 +1587,78 @@ async function showQuestion(questionId) {
   }
 }
 
+async function deleteStudent(studentId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const confirmDelete = confirm("คุณแน่ใจหรือไม่ว่าต้องการลบนักเรียนคนนี้?");
+  if (!confirmDelete) return;
+
+  try {
+    // 🔹 1. ดึงข้อมูลนักเรียนจากห้องเรียน
+    const studentRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("students").doc(studentId);
+
+    const studentDoc = await studentRef.get();
+
+    if (!studentDoc.exists) {
+      alert("ไม่พบนักเรียนนี้ในฐานข้อมูลห้องเรียน");
+      return;
+    }
+
+    // 🔹 2. ดึงค่า `uID` จากเอกสารนักเรียน
+    const studentData = studentDoc.data();
+    const uID = studentData.uID; // UID ของนักเรียน
+
+    if (!uID) {
+      alert("ไม่พบค่า uID ของนักเรียน");
+      return;
+    }
+
+    // 🔹 3. ดึง `code` จากห้องเรียนเพื่อใช้ค้นหา `subjId`
+    const classroomRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value);
+
+    const classroomDoc = await classroomRef.get();
+    if (!classroomDoc.exists) {
+      alert("ไม่พบข้อมูลห้องเรียน");
+      return;
+    }
+
+    const classData = classroomDoc.data();
+    const classCode = classData.info.code; // ใช้ code เพื่อค้นหา subjId
+
+    console.log("📢 Code ที่ใช้ค้นหา subjId:", classCode);
+
+    // 🔹 4. ค้นหา `subjId` ใน `users/{uID}/subj/`
+    const subjRef = firestore.collection("users").doc(uID)
+      .collection("subj").where("code", "==", classCode);
+
+    const subjSnapshot = await subjRef.get();
+
+    if (subjSnapshot.empty) {
+      alert("ไม่พบข้อมูลวิชาของนักเรียนในฐานข้อมูลของนักเรียน");
+      return;
+    }
+
+    // 🔹 5. ลบข้อมูล `students` และ `subj`
+    const batch = firestore.batch();
+    batch.delete(studentRef); // ลบจากห้องเรียน
+
+    subjSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref); // ลบ `subj` ของนักเรียน
+    });
+
+    await batch.commit();
+
+    alert("ลบนักเรียนออกจากห้องเรียนสำเร็จ");
+    await showStudentList(); // โหลดรายชื่อนักเรียนใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการลบนักเรียน:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถลบนักเรียนได้!");
+  }
+}
+
 
 
           onMounted(() => {
@@ -1602,6 +1676,7 @@ async function showQuestion(questionId) {
           });
 
           return {
+            deleteStudent,
             showQuestion,
             hideQuestion,
             editStudent,
