@@ -217,16 +217,22 @@
       <tr>
         <th>ลำดับ</th>
         <th>คำถาม</th>
-        <th class="text-end">จัดการ</th> <!-- เปลี่ยน class ของคอลัมน์นี้ให้ใช้ text-end เพื่อให้เนื้อหาของคอลัมน์อยู่ขวา -->
+        <th class="text-end">จัดการ</th> <!-- ใช้ text-end เพื่อให้ปุ่มอยู่ขวา -->
       </tr>
     </thead>
     <tbody>
       <tr v-for="(question, index) in questions" :key="question.id">
         <td>{{ index + 1 }}</td>
         <td>{{ question.question_text }}</td>
-        <td class="text-end"> <!-- เพิ่ม class text-end สำหรับให้ปุ่มอยู่ชิดขวา -->
+        <td class="text-end"> <!-- ปุ่มอยู่ขวา -->
           <button class="btn btn-success btn-sm" @click="viewAnswers(question.id)">
             <i class="fas fa-eye"></i> ดูคำตอบ
+          </button>
+          <button class="btn btn-warning btn-sm ms-2" @click="hideQuestion(question.id)" v-if="question.question_show">
+            <i class="fas fa-ban"></i> ปิดคำถาม
+          </button>
+          <button class="btn btn-info btn-sm ms-2" @click="showQuestion(question.id)" v-else>
+            <i class="fas fa-check"></i> เปิดคำถาม
           </button>
           <button class="btn btn-danger btn-sm ms-2" @click="deleteQuestion(question.id)">
             <i class="fas fa-trash"></i> ลบ
@@ -661,13 +667,13 @@
       const { createApp, ref, onMounted , watch} = Vue;
 
       const firebaseConfig = {
-  apiKey: "AIzaSyBK5wZT8xeSclSadPwWqD5t2Gp6uZ5OWyU",
-  authDomain: "testfirebase-80be9.firebaseapp.com",
-  projectId: "testfirebase-80be9",
-  storageBucket: "testfirebase-80be9.firebasestorage.app",
-  messagingSenderId: "507617350642",
-  appId: "1:507617350642:web:f809202fd2412b681e516b",
-  measurementId: "G-D0DFMN0YR9"
+  apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
+  authDomain: "finalmobileweb.firebaseapp.com",
+  projectId: "finalmobileweb",
+  storageBucket: "finalmobileweb.firebasestorage.app",
+  messagingSenderId: "763318502667",
+  appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
+  measurementId: "G-LSNZG1BMNT"
 };
 
       firebase.initializeApp(firebaseConfig);
@@ -1147,15 +1153,18 @@ async function saveQuestion() {
     const latestQuestionDoc = await questionRef.orderBy("question_no", "desc").limit(1).get();
     if (!latestQuestionDoc.empty) {
       const lastQuestion = latestQuestionDoc.docs[0].data();
-      qno = lastQuestion.question_no + 1;
+      qno = parseInt(lastQuestion.question_no) + 1; // แปลงเป็นตัวเลข +1
     }
 
     console.log(`✅ กำหนดค่า question_no เป็น ${qno}`);
 
+    // ✅ แปลงค่า `qno` เป็น String ก่อนบันทึก
+    const qnoString = qno.toString();
+
     // ✅ สร้างคำถามใหม่
-    const newQuestionRef = questionRef.doc(qno.toString());
+    const newQuestionRef = questionRef.doc(qnoString);
     await newQuestionRef.set({
-      question_no: qno,
+      question_no: qnoString,  // 🔹 บันทึก question_no เป็น String
       question_text: newQuestionText.value,
       question_show: true,
     });
@@ -1183,6 +1192,7 @@ async function saveQuestion() {
   }
 }
 
+
 async function fetchQuestions() {
   if (!currentClassroomId.value || !user.value) return;
 
@@ -1193,7 +1203,8 @@ async function fetchQuestions() {
   const snapshot = await questionRef.orderBy("question_no", "asc").get();
   questions.value = snapshot.docs.map(doc => ({
     id: doc.id,
-    ...doc.data()
+    ...doc.data(),
+    question_no: parseInt(doc.data().question_no)  // แปลงเป็นตัวเลขเมื่อใช้งาน
   }));
 
   console.log("📢 คำถามที่โหลดมา:", questions.value);
@@ -1311,32 +1322,33 @@ async function signInWithGoogle() {
             }
           }
 
-            async function showQRCode(classroomId) {
-    if (!classroomId || !currentClassroom.value) {
-      alert("ไม่สามารถแสดง QR Code ได้ กรุณาเลือกห้องเรียนก่อน!");
-      return;
-    }
-
-    const qrCodeElement = document.getElementById("qrcode");
-    qrCodeElement.innerHTML = "";
-
-    const qrData = JSON.stringify({
-      classroomId: classroomId,
-      className: currentClassroom.value.info.name, 
-      classCode: currentClassroom.value.info.code  
-    });
-
-
-    new QRCode(qrCodeElement, {
-      text: qrData,
-      width: 200,
-      height: 200,
-      correctLevel: QRCode.CorrectLevel.H 
-    });
-
-    const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
-    modal.show();
+          async function showQRCode(classroomId) {
+  if (!classroomId || !currentClassroom.value) {
+    alert("ไม่สามารถแสดง QR Code ได้ กรุณาเลือกห้องเรียนก่อน!");
+    return;
   }
+
+  const qrCodeElement = document.getElementById("qrcode");
+  qrCodeElement.innerHTML = "";
+
+  const qrData = JSON.stringify({
+    classroomId: classroomId,
+    className: currentClassroom.value.info.name,
+    classCode: currentClassroom.value.info.code,
+    owner: currentClassroom.value.owner // เพิ่ม owner ของห้องเรียน
+  });
+
+  new QRCode(qrCodeElement, {
+    text: qrData,
+    width: 200,
+    height: 200,
+    correctLevel: QRCode.CorrectLevel.H 
+  });
+
+  const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+  modal.show();
+  console.log(qrData);
+}
 
 
           function downloadQRCode() {
@@ -1467,7 +1479,7 @@ function viewAnswers(questionId) {
             id: doc.id,
             std_name: doc.data().std_name,
             text: doc.data().text,
-            time: doc.data().time ? formatTimestamp(doc.data().time) : "ไม่มีข้อมูลเวลา"
+            time: doc.data().time ?(doc.data().time) : "ไม่มีข้อมูลเวลา"
           }));
 
         const modalElement = document.getElementById("viewAnswersModal");
@@ -1539,6 +1551,41 @@ async function saveStudentChanges(student) {
   
 }
 
+async function hideQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId);
+
+  try {
+    await questionRef.update({ question_show: false }); // เปลี่ยนจาก true เป็น false
+    alert("ปิดคำถามสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการปิดคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถปิดคำถามได้!");
+  }
+}
+
+async function showQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId);
+
+  try {
+    await questionRef.update({ question_show: true }); // เปลี่ยนจาก false เป็น true
+    alert("เปิดคำถามสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการเปิดคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถเปิดคำถามได้!");
+  }
+}
+
+
 
           onMounted(() => {
             auth.onAuthStateChanged(async (loggedUser) => {
@@ -1555,6 +1602,8 @@ async function saveStudentChanges(student) {
           });
 
           return {
+            showQuestion,
+            hideQuestion,
             editStudent,
             saveStudentChanges,
             showCloseCheckinModal,
