@@ -1509,48 +1509,40 @@ function formatTimestamp(timestamp) {
 }
 
 async function saveStudentChanges(student) {
-  if (!currentClassroomId.value || !student.id || !currentClassroom.value) return;
+  if (!currentClassroomId.value || !student.id || !user.value) return;
 
   try {
-    // ตรวจสอบว่ามีข้อมูล session หรือไม่
-    const checkinSessionId = currentClassroom.value.checkinSessionId; // หรือหาก checkinSessionId ถูกกำหนดในที่อื่น
-    if (!checkinSessionId) {
-      alert("ไม่พบข้อมูลเช็คชื่อ");
+    // ✅ ตรวจสอบว่ามีข้อมูล session เช็คชื่อปัจจุบันหรือไม่
+    const checkinRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("checkin");
+
+    const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+    
+    if (latestCheckinDoc.empty) {
+      alert("ไม่พบข้อมูลเช็คชื่อ กรุณาเปิดเช็คชื่อก่อน!");
       return;
     }
 
-    // สร้าง path ที่ถูกต้องตามที่ต้องการ
-    const studentRef = firestore.collection("users")
-      .doc(user.value.uid)  // ใช้ UID ของผู้ใช้
-      .collection("classroom")
-      .doc(currentClassroomId.value)  // ใช้ classroom ID
-      .collection("checkin")
-      .doc(checkinSessionId)  // ใช้ session ID (จาก checkinSession)
-      .collection("students")
-      .doc(student.id);  // ใช้ stdid เป็น document ID
+    const lastCheckin = latestCheckinDoc.docs[0];
+    const checkinSessionId = lastCheckin.id; // ดึง ID ของ session เช็คชื่อล่าสุด
 
-    // ตรวจสอบว่าเอกสารมีอยู่หรือไม่
-    const studentDoc = await studentRef.get();
-    if (!studentDoc.exists) {
-      alert("ไม่พบข้อมูลนักเรียนนี้ใน Firestore");
-      return;
-    }
+    // ✅ อัปเดตข้อมูลนักเรียนใน Firestore
+    const studentRef = checkinRef.doc(checkinSessionId)
+      .collection("students").doc(student.id);
 
-    // ถ้าเอกสารมีอยู่แล้ว ก็ทำการอัปเดตข้อมูล
     await studentRef.update({
       std_mark: student.std_mark,  // หมายเหตุ
-      std_score: student.std_score,  // คะแนน
-      status: student.status  // สถานะ
+      std_score: parseInt(student.std_score) || 0,  // คะแนน (แปลงเป็นตัวเลข)
+      status: student.status  // สถานะ (เช็คชื่อแล้ว/เช็คชื่อสาย)
     });
 
     alert("บันทึกการเปลี่ยนแปลงสำเร็จ!");
     student.isEditing = false;  // ยกเลิกโหมดแก้ไข
   } catch (error) {
-    console.error("Error saving student changes:", error);
-    alert("เกิดข้อผิดพลาดในการบันทึกการเปลี่ยนแปลง");
+    console.error("❌ เกิดข้อผิดพลาดในการบันทึก:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้!");
   }
-
-  
 }
 
 async function hideQuestion(questionId) {
