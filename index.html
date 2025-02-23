@@ -1,186 +1,377 @@
 <!DOCTYPE html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ระบบจัดการห้องเรียนออนไลน์</title>
 
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบจัดการห้องเรียนออนไลน์</title>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- QRCode.js -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- QRCode.js -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
-    <style>
-      #qrcode {
-        padding: 20px;
-        background: white;
-        border-radius: 10px;
-        display: inline-block;
-      }
-      .card {
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .card:hover {
-        transform: translateY(-5px);
-      }
-      .profile-section {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-      }
-      .create-form {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-      .logo {
-        width: 1200px;
-        height: auto;
-        margin-top: 50px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app" class="container py-4">
-      <!-- Navbar -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#">
-            <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
-          </a>
-          <div v-if="user" class="d-flex align-items-center">
-            <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
-            <span class="me-3">{{ userName }}</span>
-            <button class="btn btn-outline-danger" @click="signOut">
-              <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
-            </button>
-          </div>
-        </div>
-      </nav>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-      <!-- Login Screen -->
-      <div v-if="!user" class="text-center">
-        <h2 class="mb-4">ยินดีต้อนรับสู่ระบบจัดการห้องเรียนออนไลน์</h2>
-        <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
-          <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
-        </button>
-        <div><img class="logo" src="./img/logocom.png" alt="logo"></div>
-      </div>
+  <style>
+    #qrcode {
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      display: inline-block;
+    }
 
-      <!-- Main Content -->
-      <div v-else>
-        <div v-if="!currentClassroomId">
-          <!-- Profile Section -->
-          <div v-if="showProfile" class="profile-section">
-            <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
-            <div class="row">
-              <div class="col-md-4 text-center">
-                <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
-              </div>
-              <div class="col-md-8">
-                <div class="mb-3">
-                  <label class="form-label">ชื่อผู้ใช้</label>
-                  <input type="text" v-model="userName" class="form-control">
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">URL รูปโปรไฟล์</label>
-                  <input type="text" v-model="userPhoto" class="form-control">
-                </div>
-                <button class="btn btn-success" @click="updateProfile">
-                  <i class="fas fa-save"></i> บันทึกข้อมูล
-                </button>
-              </div>
-            </div>
-          </div>
+    .card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
 
-          <!-- Action Buttons -->
-          <div class="text-center mb-4">
-            <button class="btn btn-info me-2" @click="showProfile = !showProfile">
-              <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
-            </button>
-            <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
-              <i class="fas fa-plus"></i> สร้างห้องเรียน
-            </button>
-          </div>
+    .card:hover {
+      transform: translateY(-5px);
+    }
 
-          <!-- Create Classroom Form -->
-          <div v-if="showCreateForm" class="create-form card p-4 mb-4">
-            <h4 class="text-center mb-3">สร้างห้องเรียนใหม่</h4>
-            <div class="mb-3">
-              <label class="form-label">รหัสวิชา</label>
-              <input type="text" class="form-control" v-model="classCode">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">ชื่อวิชา</label>
-              <input type="text" class="form-control" v-model="className">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">URL รูปภาพ</label>
-              <input type="text" class="form-control" v-model="classPhoto">
-            </div>
-            <button class="btn btn-success w-100" @click="createClassroom">
-              <i class="fas fa-plus-circle"></i> สร้างห้องเรียน
-            </button>
-          </div>
+    .profile-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
 
-          <!-- Classrooms Grid -->
-          <div class="row">
-            <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
-              <div class="card">
-                <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" 
-                     class="card-img-top" alt="classroom image"
-                     style="height: 200px; object-fit: cover;">
-                <div class="card-body">
-                  <h5 class="card-title">{{ classroom.info.name }}</h5>
-                  <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
-                  <div class="btn-group w-100">
-                    <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
-                      <i class="fas fa-eye"></i> ดู
-                    </button>
-                    <button class="btn btn-warning" @click="editClassroom(classroom)">
-                      <i class="fas fa-edit"></i> แก้ไข
-                    </button>
-                    <button class="btn btn-danger" @click="confirmDelete(classroom)">
-                      <i class="fas fa-trash"></i> ลบ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    .create-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
-        <!-- Classroom Detail -->
-        <div v-else>
-          <button class="btn btn-secondary mb-3" @click="backToHome">
-            <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+    .logo {
+      width: 1200px;
+      height: auto;
+      margin-top: 50px;
+    }
+
+    @font-face {
+      font-family: myProjectFont;
+      src: url(font/ibmplexsansthairegular.ttf);
+    }
+
+    body{
+      font-family: myProjectFont;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container py-4">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <i class="fas fa-graduation-cap"></i> ระบบจัดการห้องเรียน
+        </a>
+        <div v-if="user" class="d-flex align-items-center">
+          <img :src="userPhoto" class="rounded-circle me-2" width="32" height="32" v-if="userPhoto">
+          <span class="me-3">{{ userName }}</span>
+          <button class="btn btn-outline-danger" @click="signOut">
+            <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
           </button>
-          <div class="card">
-            <div class="card-body">
-              <h4>{{ currentClassroom.info.name }}</h4>
-              <p>รหัสวิชา: {{ currentClassroom.info.code }}</p>
-              <img :src="currentClassroom.info.photo" class="img-fluid rounded mb-3" v-if="currentClassroom.info.photo">
-              <button class="btn btn-primary" @click="showQRCode(currentClassroomId)">
-                <i class="fas fa-qrcode"></i> แสดง QR Code
+        </div>
+      </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div v-if="!user" class="text-center">
+      <h2 class="mb-4">ยินดีต้อนรับสู่ระบบจัดการห้องเรียนออนไลน์</h2>
+      <button class="btn btn-primary btn-lg" @click="signInWithGoogle">
+        <i class="fab fa-google me-2"></i> เข้าสู่ระบบด้วย Google
+      </button>
+      <div><img class="logo" src="./img/logocom.png" alt="logo"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else>
+      <div v-if="!currentClassroomId">
+        <!-- Profile Section -->
+        <div v-if="showProfile" class="profile-section">
+          <h4 class="mb-3">โปรไฟล์ของฉัน</h4>
+          <div class="row">
+            <div class="col-md-4 text-center">
+              <img :src="userPhoto" class="rounded-circle mb-3" width="150" height="150" v-if="userPhoto">
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">ชื่อผู้ใช้</label>
+                <input type="text" v-model="userName" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">URL รูปโปรไฟล์</label>
+                <input type="text" v-model="userPhoto" class="form-control">
+              </div>
+              <button class="btn btn-success" @click="updateProfile">
+                <i class="fas fa-save"></i> บันทึกข้อมูล
               </button>
             </div>
           </div>
         </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mb-4">
+          <button class="btn btn-info me-2" @click="showProfile = !showProfile">
+            <i class="fas fa-user"></i> {{ showProfile ? 'ซ่อน' : 'แสดง' }}โปรไฟล์
+          </button>
+          <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
+            <i class="fas fa-plus"></i> สร้างห้องเรียน
+          </button>
+        </div>
+
+        <!-- Create Classroom Form -->
+        <div v-if="showCreateForm" class="create-form card p-4 mb-4">
+          <h4 class="text-center mb-3">สร้างห้องเรียนใหม่</h4>
+          <div class="mb-3">
+            <label class="form-label">รหัสวิชา</label>
+            <input type="text" class="form-control" v-model="classCode">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ชื่อวิชา</label>
+            <input type="text" class="form-control" v-model="className">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">URL รูปภาพ</label>
+            <input type="text" class="form-control" v-model="classPhoto">
+          </div>
+          <button class="btn btn-success w-100" @click="createClassroom">
+            <i class="fas fa-plus-circle"></i> สร้างห้องเรียน
+          </button>
+        </div>
+
+        <!-- Classrooms Grid -->
+        <div class="row">
+          <div v-for="classroom in classrooms" :key="classroom.id" class="col-md-4 mb-4">
+            <div class="card">
+              <img :src="classroom.info.photo || 'https://via.placeholder.com/400'" class="card-img-top"
+                alt="classroom image" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <h1 class="card-title"><b>{{ classroom.info.name }}</b></h1>
+                <p class="card-text">รหัสวิชา: {{ classroom.info.code }}</p>
+                <div class="btn-group w-100">
+                  <button class="btn btn-primary" @click="viewClassroom(classroom.id)">
+                    <i class="fas fa-eye"></i> ดู
+                  </button>
+                  <button class="btn btn-warning" @click="editClassroom(classroom)">
+                    <i class="fas fa-edit"></i> แก้ไข
+                  </button>
+                  <button class="btn btn-danger" @click="confirmDelete(classroom)">
+                    <i class="fas fa-trash"></i> ลบ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+     <!-- Classroom Detail -->
+<div v-if="currentClassroomId">
+  <button class="btn btn-secondary mb-3" @click="backToHome">
+    <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+  </button>
+
+  <!-- Classroom information section -->
+  <div class="card mb-4">
+    <div class="card-body">
+
+      <!-- ตารางข้อมูลห้องเรียนรวมรูปภาพ -->
+      <table class="table">
+        <tr>
+          <td style="width: 100px; vertical-align: middle;">
+            <!-- รูปภาพห้องเรียน -->
+            <img :src="currentClassroom.info.photo" class="img-fluid rounded" style="max-width: 200px; object-fit: cover;" v-if="currentClassroom.info.photo">
+          </td>
+          <td>
+            <!-- ข้อมูลห้องเรียน -->
+            <h1><b>ชื่อวิชา: </b> {{ currentClassroom.info.name }}</h1>
+            <br>
+            <h1><b>รหัสวิชา: </b> {{ currentClassroom.info.code }}</h1>
+            <br>
+
+            <button class="btn btn-primary" @click="openCreateQuestionModal">
+              <i class="fa-solid fa-plus"></i> สร้างคำถาม
+            </button>
+            
+            <!-- พื้นที่แสดงคำถาม -->
+<!-- ตารางข้อมูลคำถาม -->
+<div class="mt-3">
+  <h4>📌 รายการคำถาม</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>คำถาม</th>
+        <th class="text-end">จัดการ</th> <!-- ใช้ text-end เพื่อให้ปุ่มอยู่ขวา -->
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(question, index) in questions" :key="question.id">
+        <td>{{ index + 1 }}</td>
+        <td>{{ question.question_text }}</td>
+        <td class="text-end"> <!-- ปุ่มอยู่ขวา -->
+          <button class="btn btn-success btn-sm" @click="viewAnswers(question.id)">
+            <i class="fas fa-eye"></i> ดูคำตอบ
+          </button>
+          <button class="btn btn-warning btn-sm ms-2" @click="hideQuestion(question.id)" v-if="question.question_show">
+            <i class="fas fa-ban"></i> ปิดคำถาม
+          </button>
+          <button class="btn btn-info btn-sm ms-2" @click="showQuestion(question.id)" v-else>
+            <i class="fas fa-check"></i> เปิดคำถาม
+          </button>
+          <button class="btn btn-danger btn-sm ms-2" @click="deleteQuestion(question.id)">
+            <i class="fas fa-trash"></i> ลบ
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+            
+
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+<!-- ปุ่มทั้งหมดในตาราง -->
+<div class="btn-group w-100 d-flex justify-content-between">
+  <div>
+    <button class="btn btn-success" @click="openCheckin">
+      <i class="fas fa-check-circle"></i> เปิดเช็คชื่อ
+    </button>
+    <button class="btn btn-warning" @click="closeCheckin" style="margin-left: 8px;">
+      <i class="fas fa-times-circle"></i> ปิดเช็คชื่อ
+    </button>
+    <!-- ปุ่มใหม่ที่เพิ่มเข้ามา -->
+    <button class="btn btn-info ms-2" @click="showCheckinDetailsModal">
+      <i class="fas fa-info-circle"></i> แสดงรายละเอียดเช็คชื่อ
+    </button>
+  </div>
+
+  <div>
+    <button class="btn btn-info ms-auto" @click="showStudentList">
+      <i class="fas fa-users"></i> แสดงรายชื่อ
+    </button>
+    <button class="btn btn-primary ms-2" @click="showQRCode(currentClassroomId)">
+      <i class="fas fa-qrcode"></i> แสดง QR Code
+    </button>
+  </div>
+</div>
+
+
+<div v-if="showStudents" class="mt-3">
+  <h4>รายชื่อนักเรียน</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>รหัสนักเรียน</th>
+        <th>ชื่อนักเรียน</th>
+        <th>สถานะ</th>
+        <th class="text-end">จัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(student, index) in students" :key="student.id">
+        <td>{{ index + 1 }}</td>  <!-- ลำดับ -->
+        <td>{{ student.std_id }}</td>  <!-- รหัสนักเรียน -->
+        <td>{{ student.std_name }}</td> <!-- ชื่อนักเรียน -->
+        <td>
+          <span v-if="student.status === 2">นักศึกษา</span>
+          <span v-else>สถานะไม่ระบุ</span>
+        </td>
+        <td class="text-end">
+          <button class="btn btn-danger btn-sm" @click="deleteStudent(student.id)">
+            <i class="fas fa-trash"></i> ลบ
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+        <!-- ตารางแสดงคะแนน -->
+        <div v-if="showScores" class="mt-3">
+          <h4>คะแนนนักเรียน</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัส</th>
+                <th>ชื่อ</th>
+                <th>หมายเหตุ</th>
+                <th>วันเวลา</th>
+                <th>คะแนน</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="student in scores" :key="student.id">
+                <td>{{ student.index }}</td>
+                <td>{{ student.id }}</td>
+                <td>{{ student.name }}</td>
+                <td><input type="text" v-model="student.remark" class="form-control"></td>
+                <td>{{ student.timestamp }}</td>
+                <td><input type="number" v-model="student.score" class="form-control"></td>
+                <td><input type="text" v-model="student.statusText" class="form-control"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- ปุ่มบันทึกคะแนน -->
+          <button class="btn btn-success" @click="saveScores">
+            <i class="fas fa-save"></i> บันทึกข้อมูล
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showStudents_checkin" class="mt-3">
+        <h4>รายชื่อนักเรียนที่เช็คชื่อ</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>รหัส</th>
+              <th>ชื่อ</th>
+              <th>หมายเหตุ</th>
+              <th>วันเวลา</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="student in students" :key="student.id">
+              <td>{{ student.index }}</td>
+              <td>{{ student.id }}</td>
+              <td>{{ student.name }}</td>
+              <td>{{ student.status }}</td>
+              <td>{{ student.timestamp }}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" @click="removeStudent(student.id)">
+                  <i class="fas fa-trash"></i> ลบ
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
 
       <!-- Edit Classroom Modal -->
       <div class="modal fade" id="editClassroomModal" tabindex="-1">
@@ -254,25 +445,256 @@
       </div>
     </div>
 
-    <script>
-      const { createApp, ref, onMounted } = Vue;
+    <!-- Modal สำหรับสร้างคำถาม -->
+<div class="modal fade" id="createQuestionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">สร้างคำถามใหม่</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">กรุณากรอกคำถาม:</label>
+        <input type="text" v-model="newQuestionText" class="form-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" @click="saveQuestion">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="viewAnswersModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">คำตอบของคำถาม</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h5>📌 คำถาม: {{ selectedQuestionText }}</h5>
+        <table class="table mt-3">
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>ชื่อผู้ตอบ</th>
+              <th>คำตอบ</th>
+              <th>เวลา</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(answer, index) in answers" :key="answer.id">
+              <td>{{ index + 1 }}</td>
+              <td>{{ answer.std_name }}</td>
+              <td>{{ answer.text }}</td>
+              <td>{{ answer.time }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- รายละเอียดการเช็คชื่อ Modal -->
+<div class="modal fade" id="checkinDetailsModal" tabindex="-1" aria-labelledby="checkinDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinDetailsModalLabel">รายละเอียดการเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div v-if="checkinSessions.length > 0">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>สถานะ</th>
+                <th>รหัสเช็คชื่อ</th>
+                <th class="text-end">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(session, index) in checkinSessions" :key="session.id">
+                <td>{{ index + 1 }}</td>
+                <!-- เปลี่ยนสถานะและเพิ่มคลาสตามค่า status -->
+                <td :class="{
+                  'status-closed': session.status === 1,
+                  'status-open': session.status === 0
+                }">
+                  <span v-if="session.status === 1" style="background-color: red; color: white; padding: 2px; border-radius: 5px;">ปิดการเช็คชื่อแล้ว</span>
+                  <span v-else style="background-color: green; color:  white; padding: 2px; border-radius: 5px; ">เปิดให้เช็คชื่อ</span>
+                </td>
+                <td>{{ session.code }}</td>  <!-- แสดงรหัสเช็คชื่อ -->
+                <td class="text-end">
+                  <button class="btn btn-primary btn-sm" @click="fetchCheckinDetails(session)">
+                    <i class="fas fa-eye"></i> ดูรายละเอียด
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else>
+          <p>ไม่พบข้อมูลการเช็คชื่อ</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- รายละเอียดการเช็คชื่อ Modal ตรงกดปุ่มดูรายละเอียดจากข้างใน -->
+<div class="modal fade" id="checkinDetailsModalView" tabindex="-1" aria-labelledby="checkinDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" style="max-width: 90%; width: 90%;"> <!-- ใช้ modal-lg และปรับขนาดตามที่ต้องการ -->
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinDetailsModalLabel">รายละเอียดการเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div v-if="students.length > 0">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>รหัสนักศึกษา</th>
+                <th>ชื่อ</th>
+                <th>หมายเหตุ</th>
+                <th>วันเวลา</th>
+                <th>คะแนน</th>
+                <th>สถานะ</th>
+                <th class="text-end">จัดการ</th> <!-- เพิ่มคอลัมน์สำหรับปุ่ม "แก้ไข" -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(student, index) in students" :key="student.id">
+                <td>{{ index + 1 }}</td>
+                <td>{{ student.std_id }}</td>
+                <td>{{ student.std_name }}</td>
+                <td>
+                  <input type="text" v-model="student.std_mark" v-if="student.isEditing" class="form-control"> <!-- แสดงช่องกรอกหมายเหตุเมื่ออยู่ในโหมดแก้ไข -->
+                  <span v-else>{{ student.std_mark }}</span> <!-- แสดงค่าปัจจุบัน -->
+                </td>
+                <td>{{ student.date }}</td>
+                <td>
+                  <input type="number" v-model="student.std_score" v-if="student.isEditing" class="form-control"> <!-- แสดงช่องกรอกคะแนนเมื่ออยู่ในโหมดแก้ไข -->
+                  <span v-else>{{ student.std_score }}</span> <!-- แสดงค่าปัจจุบัน -->
+                </td>
+                <td>
+                  <select v-model="student.status" v-if="student.isEditing" class="form-control">
+                    <option value="เช็คชื่อแล้ว">เช็คชื่อแล้ว</option>
+                    <option value="เช็คชื่อสาย">เช็คชื่อสาย</option>
+                  </select>
+                  <span v-else>{{ student.status }}</span> <!-- แสดงสถานะปัจจุบัน -->
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-warning btn-sm" @click="editStudent(student)">
+                    <i class="fas fa-edit"></i> แก้ไข
+                  </button>
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-success btn-sm" @click="saveStudentChanges(student)" v-if="student.isEditing">
+                    <i class="fas fa-save"></i> บันทึก
+                  </button>
+                </td>
+                
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else>
+          <p>ไม่พบข้อมูลการเช็คชื่อ</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal สำหรับกรอกรหัสเช็คชื่อ -->
+<div class="modal fade" id="checkinModal" tabindex="-1" aria-labelledby="checkinModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="checkinModalLabel">กรอกรหัสเช็คชื่อ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <label for="checkinCode" class="form-label">รหัสเช็คชื่อ:</label>
+        <input type="text" id="checkinCode" class="form-control" v-model="checkinCode" placeholder="กรอกรหัสเช็คชื่อ">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" @click="submitCheckin">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แสดงข้อความเมื่อปิดการเช็คชื่อ -->
+<div class="modal fade" id="closeCheckinModal" tabindex="-1" aria-labelledby="closeCheckinModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="closeCheckinModalLabel">การเช็คชื่อถูกปิด</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="checkinMessage"></p> <!-- ข้อความที่จะเปลี่ยนแปลง -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script type="module">
+  import { ref } from 'vue';
+  // โค้ดอื่นๆ ที่ใช้ Vue
+</script>
+
+
+    <script >
+
+      const { createApp, ref, onMounted , watch} = Vue;
 
       const firebaseConfig = {
-  apiKey: "AIzaSyBK5wZT8xeSclSadPwWqD5t2Gp6uZ5OWyU",
-  authDomain: "testfirebase-80be9.firebaseapp.com",
-  projectId: "testfirebase-80be9",
-  storageBucket: "testfirebase-80be9.firebasestorage.app",
-  messagingSenderId: "507617350642",
-  appId: "1:507617350642:web:f809202fd2412b681e516b",
-  measurementId: "G-D0DFMN0YR9"
+  apiKey: "AIzaSyAsEANU9p5dXhUIgITl-k5W3Wzh4K-7wfM",
+  authDomain: "finalmobileweb.firebaseapp.com",
+  projectId: "finalmobileweb",
+  storageBucket: "finalmobileweb.firebasestorage.app",
+  messagingSenderId: "763318502667",
+  appId: "1:763318502667:web:8aa0a7f919c3df79be0e0e",
+  measurementId: "G-LSNZG1BMNT"
 };
 
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const firestore = firebase.firestore();
+      
 
       createApp({
+        
         setup() {
+          
+          const answers = ref([]);
+          const selectedQuestionText = ref("");
+          const questions = ref([]);
+          const createQuestionModal = ref(null);
+          const newQuestionText = ref("");
           const user = ref(null);
           const userName = ref("");
           const userPhoto = ref("");
@@ -288,6 +710,355 @@
           const deletingClassroom = ref(null);
           const editModal = ref(null);
           const deleteModal = ref(null);
+          const showStudents_checkin = ref(false);
+
+          ////
+
+          const students = ref([]);
+          const showStudents = ref(false);
+          const checkinSessions = ref({});
+          const showScores = ref(false);
+          const scores = ref([]);
+
+
+          async function fetchCheckinSessions() {
+  if (!currentClassroomId.value || !user.value) return; // ตรวจสอบว่ามีการเลือกห้องเรียนและผู้ใช้
+
+  // ดึงข้อมูลทั้งหมดจาก collection checkin/{cno}
+  const checkinRef = firestore.collection("users")
+    .doc(user.value.uid)  // ใช้ UID ของผู้ใช้
+    .collection("classroom")
+    .doc(currentClassroomId.value)  // ใช้ ID ของห้องเรียน
+    .collection("checkin");  // ไม่ต้องระบุ doc ID เพื่อดึงทุกๆ document ใน collection
+
+  const snapshot = await checkinRef.get();  // ดึงข้อมูลทั้งหมดจาก Firestore
+
+  if (!snapshot.empty) {
+    // กรองข้อมูลออกเอกสารที่มี placeholder: true
+    checkinSessions.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรอง document ที่มี placeholder: true
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()  // แปลงข้อมูลใน document เป็น object
+      }));
+  } else {
+    console.log("ไม่พบข้อมูลการเช็คชื่อ");
+    checkinSessions.value = [];  // ถ้าไม่มีข้อมูล ก็คืนค่าเป็น array เปล่า
+  }
+}
+
+function editStudent(student) {
+  student.isEditing = true; // เปลี่ยนสถานะให้อยู่ในโหมดแก้ไข
+}
+
+function showCheckinDetailsModal() {
+  const modalElement = document.getElementById("checkinDetailsModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+  fetchCheckinSessions();  // ดึงข้อมูลจาก Firestore ทุกครั้งที่เปิด Modal
+}
+
+function viewCheckinDetails(session) {
+  console.log(`กำลังดูรายละเอียดการเช็คชื่อครั้งที่: ${session.cno}`);
+  // ดึงข้อมูลที่เกี่ยวข้องกับ session.cno จาก Firestore หากต้องการ
+  fetchCheckinDetails(session);
+}
+
+async function fetchCheckinDetails(session) {
+  if (!currentClassroomId.value || !session.id) return;
+
+  const studentRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin").doc(session.id)  // ใช้ session.id เพื่อดึงข้อมูลเช็คชื่อ
+    .collection("students");
+
+  const snapshot = await studentRef.get();
+  
+  if (!snapshot.empty) {
+    students.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรอง document ที่มี placeholder: true ออก
+      .map((doc, index) => {
+        const studentData = doc.data();
+        return {
+          id: doc.id,
+          std_id: studentData.std_id,
+          std_name: studentData.std_name,
+          std_mark: studentData.std_mark,
+          date: (studentData.date),
+          std_score: studentData.std_score,
+          status: studentData.status === 0 ? "เช็คชื่อแล้ว" : "เช็คชื่อสาย"
+        };
+      });
+  } else {
+    console.log("ไม่พบข้อมูลนักเรียนที่เช็คชื่อ");
+    students.value = [];
+  }
+
+  // ปิด Modal "แสดงรายละเอียดเช็คชื่อ" ก่อนเปิด Modal ใหม่
+  const checkinDetailsModalElement = document.getElementById("checkinDetailsModal");
+  const checkinDetailsModalInstance = bootstrap.Modal.getInstance(checkinDetailsModalElement);
+  if (checkinDetailsModalInstance) {
+    checkinDetailsModalInstance.hide(); // ปิด Modal นี้ก่อน
+  }
+
+  // เปิด Modal "ดูรายละเอียด" อันนี้จากข้างในปุ่ม แสดงรายละเอียดนะ อย่าดูผิดอัน
+  const modalElement = document.getElementById("checkinDetailsModalView");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
+          
+
+          // ดึงข้อมูลนักเรียนที่เช็คชื่อจาก Firestore
+          async function fetchScores() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            firestore.collection("classroom").doc(currentClassroom.value.id)
+              .collection("checkin").doc(checkinSession.value.toString())
+              .collection("scores")
+              .onSnapshot(snapshot => {
+                scores.value = snapshot.docs.map((doc, index) => ({
+                  id: doc.id,
+                  index: index + 1,
+                  name: doc.data().name,
+                  status: doc.data().status ? "เช็คชื่อแล้ว" : "ยังไม่เช็ค",
+                  timestamp: doc.data().timestamp?.toDate().toLocaleString() || "ไม่มีข้อมูล",
+                  score: doc.data().score || 0,
+                  remark: doc.data().remark || "",
+                  statusText: doc.data().statusText || ""
+                }));
+              });
+
+            showScores.value = true; // แสดงตารางเมื่อดึงข้อมูลสำเร็จ
+          }
+
+          // อัปเดตข้อมูลคะแนน, หมายเหตุ และสถานะลงใน Firestore
+          async function saveScores() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            for (const student of scores.value) {
+              await firestore.collection("classroom").doc(currentClassroom.value.id)
+                .collection("checkin").doc(checkinSession.value.toString())
+                .collection("scores").doc(student.id)
+                .update({
+                  score: student.score,
+                  remark: student.remark,
+                  statusText: student.statusText
+                });
+            }
+
+            alert("บันทึกข้อมูลคะแนนสำเร็จ!");
+          }
+
+
+          async function removeStudent(studentId) {
+            if (!currentClassroomId.value || !checkinSession.value) return;
+
+            await firestore.collection("classroom").doc(currentClassroomId.value)
+              .collection("checkin").doc(checkinSession.value.toString())
+              .collection("scores").doc(studentId).delete();
+
+            alert("ลบรายชื่อนักเรียนสำเร็จ!");
+          }
+
+          async function showStudentList() {
+  if (!currentClassroomId.value || !user.value) return;  // ตรวจสอบว่าได้เลือกห้องเรียนและผู้ใช้
+
+  showStudents.value = !showStudents.value;  // สลับการแสดง/ซ่อนรายชื่อนักเรียน
+
+  const studentRef = firestore.collection("users")  // เข้าไปใน collection "users"
+    .doc(user.value.uid)  // ใช้ UID ของผู้ใช้
+    .collection("classroom")  // เข้าไปใน collection "classroom"
+    .doc(currentClassroomId.value)  // ใช้ ID ของห้องเรียนที่เลือก
+    .collection("students");  // เข้าไปใน collection "students"
+
+  // ดึงข้อมูลนักเรียนทั้งหมดจาก Firestore
+  const snapshot = await studentRef.get();
+  
+  if (snapshot.empty) {
+    console.log("ไม่พบข้อมูลนักเรียนในห้องเรียนนี้");
+    return;  // ถ้าไม่พบข้อมูลใดๆ ให้หยุดทำงาน
+  }
+
+  // เก็บข้อมูลนักเรียนใน students array โดยกรองออกข้อมูลที่มี placeholder: true
+  students.value = snapshot.docs
+    .map((doc, index) => ({
+      id: doc.id,  // id ของนักเรียน
+      std_id: doc.data().std_id,  // รหัสนักเรียน
+      std_name: doc.data().std_name,  // ชื่อนักเรียน
+      status: doc.data().status,  // สถานะนักเรียน
+      placeholder: doc.data().placeholder // placeholder
+    }))
+    .filter(student => !student.placeholder); // กรองข้อมูลที่มี placeholder: true ออก
+
+  console.log("Fetched students:", students.value);  // ตรวจสอบข้อมูลที่ดึงมา
+}
+
+
+
+
+async function openCheckin() {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
+
+  // ดึงค่าล่าสุดของ `cno`
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+  let cno = 1; // ถ้ายังไม่มีข้อมูล ให้เริ่มที่ 1
+  let lastStatus = 1; // ค่าเริ่มต้น (1 = ปิดการเช็คชื่อแล้ว)
+
+  if (!latestCheckinDoc.empty) {
+    const lastCheckin = latestCheckinDoc.docs[0].data();
+    cno = lastCheckin.cno + 1;
+    lastStatus = lastCheckin.status; // ดึงค่าของ status ล่าสุด
+  }
+
+  // ❌ ถ้ายังไม่ปิดการเช็คชื่อรอบที่แล้ว ไม่ให้เปิดใหม่
+  if (lastStatus === 0) {
+    showCheckinErrorModal(`ให้คุณปิดเช็คชื่อครั้งที่ ${cno - 1} ก่อน`);
+    return;
+  }
+
+  // ❌ ถ้าเช็คชื่อเปิดอยู่แล้ว
+  if (lastStatus === 0) {
+    alert("ยังไม่ได้ปิดการเช็คชื่อรอบก่อนหน้า");
+    return;
+  }
+
+  // ✅ **ลบ document `placeholder:true` ออกจาก Firestore**
+  const placeholderDoc = await checkinRef.where("placeholder", "==", true).get();
+  placeholderDoc.forEach(async (doc) => {
+    await checkinRef.doc(doc.id).delete();
+  });
+
+  // ✅ เปิด Modal ให้กรอกรหัสเช็คชื่อ
+  const modalElement = document.getElementById("checkinModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
+
+// ฟังก์ชันที่จะเรียกเมื่อกรอกรหัสเช็คชื่อใน Modal
+async function submitCheckin() {
+  if (!checkinCode.value.trim()) {
+    alert("กรุณากรอกรหัสเช็คชื่อ");
+    return;
+  }
+
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
+
+  // ตรวจสอบว่ารหัสเช็คชื่อมีอยู่ในฐานข้อมูลหรือไม่
+  const checkinSnapshot = await checkinRef.where("code", "==", checkinCode.value).get();
+  
+  if (!checkinSnapshot.empty) {
+    // ถ้ามีการเช็คชื่อที่มีรหัสเดียวกันอยู่แล้ว
+    alert("รหัสเช็คชื่อนี้ซ้ำกับการเช็คชื่อก่อนหน้านี้ กรุณากรอกรหัสใหม่!");
+    return;
+  }
+
+  // ดึงค่าล่าสุดของ `cno`
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+  let cno = latestCheckinDoc.empty ? 1 : latestCheckinDoc.docs[0].data().cno + 1;
+
+  // บันทึกข้อมูล `checkin/{cno}`
+  await checkinRef.doc(cno.toString()).set({
+    cno: cno,
+    code: checkinCode.value,
+    date: firebase.firestore.FieldValue.serverTimestamp(),
+    status: 0  // ตั้งค่า status เป็น 0 (เช็คชื่อยังไม่ปิด)
+  });
+
+  // สร้าง collection `students` เปล่าๆ ข้างใน `{cno}`
+  await checkinRef.doc(cno.toString()).collection("students").add({ placeholder: true });
+
+  alert(`เปิดเช็คชื่อครั้งที่ ${cno} สำเร็จ!`);
+
+  // รีเซ็ตค่า checkinCode และปิด Modal
+  checkinCode.value = "";
+  const modalElement = document.getElementById("checkinModal");
+  const modalInstance = bootstrap.Modal.getInstance(modalElement);
+  modalInstance.hide();
+}
+
+
+
+
+          // ✅ ฟังก์ชันปิดการเช็คชื่อ
+          async function closeCheckin() {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const checkinRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("checkin");
+
+  // ดึงข้อมูลล่าสุด
+  const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+
+  if (latestCheckinDoc.empty) {
+    showCloseCheckinModal("ยังไม่มีการเปิดเช็คชื่อ!");
+    return;
+  }
+
+  const lastCheckin = latestCheckinDoc.docs[0];
+  const cno = lastCheckin.data().cno;
+
+  // ❌ ถ้าเช็คชื่อปิดแล้ว ไม่ต้องทำอะไร
+  if (lastCheckin.data().status === 1) {
+    showCloseCheckinModal(`การเช็คชื่อครั้งที่ ${cno} ถูกปิดไปแล้ว`);
+    return;
+  }
+
+  // ✅ อัปเดต `status` เป็น `1`
+  await checkinRef.doc(cno.toString()).update({
+    status: 1
+  });
+
+  showCloseCheckinModal(`ปิดการเช็คชื่อครั้งที่ ${cno} แล้ว`);
+}
+
+function showCloseCheckinModal(message) {
+  const messageElement = document.getElementById("checkinMessage");
+  messageElement.textContent = message; // แสดงข้อความที่ต้องการ
+  const modalElement = document.getElementById("closeCheckinModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
+
+          async function saveCheckin() {
+            if (!currentClassroom.value || !checkinSession.value) return;
+
+            const studentRef = firestore
+              .collection("classroom")
+              .doc(currentClassroom.value.id)
+              .collection("checkin")
+              .doc(checkinSession.value.toString())
+              .collection("scores");
+
+            const snapshot = await studentRef.get();
+
+            if (snapshot.empty) {
+              alert("ไม่มีนักเรียนที่เช็คชื่อ กรุณาเปิดเช็คชื่อก่อน!");
+              return;
+            }
+
+            snapshot.forEach((doc) => {
+              studentRef.doc(doc.id).update({
+                status: 1,
+              });
+            });
+
+            alert("บันทึกการเช็คชื่อสำเร็จ!");
+
+            showStudents_checkin.value = true; // ✅ แสดงตารางเช็คชื่อ
+            console.log("📢 showStudents_checkin อัปเดตเป็น:", showStudents_checkin.value);
+
+            await nextTick();
+            watchCheckinStudents();
+          }
+
+
 
           async function fetchClassrooms() {
             if (!user.value) return;
@@ -298,12 +1069,22 @@
 
           async function createClassroom() {
   if (!user.value) return;
-  
-  // สร้างห้องเรียนใหม่ใน Firestore
+
+  // ตรวจสอบว่ามีรหัสวิชาซ้ำกันหรือไม่
+  const querySnapshot = await firestore.collection("users").doc(user.value.uid)
+    .collection("classroom")
+    .where("info.code", "==", classCode.value)
+    .get();
+
+  if (!querySnapshot.empty) {
+    alert("มีรหัสวิชานี้อยู่แล้ว กรุณาใช้รหัสวิชาอื่น!");
+    return;
+  }
+
+  // สร้างเอกสารใหม่ภายใน collection classroom
   const classRef = firestore.collection("users").doc(user.value.uid)
     .collection("classroom").doc();
-  
-  // เพิ่มข้อมูลห้องเรียนและกำหนดค่า status เป็น 1 (อาจารย์)
+
   await classRef.set({
     owner: user.value.uid,
     info: {
@@ -311,30 +1092,219 @@
       name: className.value,
       photo: classPhoto.value
     },
-    status: 1  // กำหนดค่า status เป็น 1 (อาจารย์)
+    status: 1 // กำหนดค่า status เป็น 1 (อาจารย์)
   });
-  
+
+  // ✅ สร้าง collection "students", "checkin", และ "questions" พร้อมเอกสาร placeholder
+  await classRef.collection("students").add({ placeholder: true });
+  await classRef.collection("checkin").add({ placeholder: true });
+  await classRef.collection("questions").add({ placeholder: true });
+
   showCreateForm.value = false;
-  // รีเซ็ตฟอร์ม
+
+  // รีเซ็ตค่าฟอร์ม
   classCode.value = "";
   className.value = "";
   classPhoto.value = "";
+
   fetchClassrooms();
+  alert("สร้างห้องเรียนสำเร็จ!");
+}
+
+function openCreateQuestionModal() {
+  console.log("กดปุ่มสร้างคำถาม");
+  newQuestionText.value = "";
+
+  const modalElement = document.getElementById("createQuestionModal");
+  if (modalElement) {
+    createQuestionModal.value = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+    createQuestionModal.value.show();
+  } else {
+    console.error("❌ ไม่พบ modal createQuestionModal");
+  }
+}
+
+async function saveQuestion() {
+  console.log("✅ ฟังก์ชัน saveQuestion() ถูกเรียกใช้งาน");
+
+  if (!currentClassroomId.value || !user.value) {
+    console.error("❌ ไม่มีห้องเรียนที่เลือก หรือผู้ใช้ยังไม่ได้ล็อกอิน");
+    alert("กรุณาเข้าสู่ระบบ และเลือกห้องเรียนก่อน!");
+    return;
+  }
+
+  if (!newQuestionText.value.trim()) {
+    console.error("❌ ไม่มีข้อความคำถามที่กรอก");
+    alert("กรุณากรอกคำถามก่อนบันทึก!");
+    return;
+  }
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions");
+
+  console.log("📌 เตรียมบันทึกข้อมูลไปที่ Firestore...");
+
+  try {
+    // ✅ ลบ placeholder ถ้ามี
+    const placeholderDocs = await questionRef.where("placeholder", "==", true).get();
+    placeholderDocs.forEach(async (doc) => {
+      await questionRef.doc(doc.id).delete();
+      console.log(`🗑️ ลบ placeholder: ${doc.id}`);
+    });
+
+    // ✅ ดึง question_no ล่าสุด
+    let qno = 1;
+    const latestQuestionDoc = await questionRef.orderBy("question_no", "desc").limit(1).get();
+    if (!latestQuestionDoc.empty) {
+      const lastQuestion = latestQuestionDoc.docs[0].data();
+      qno = parseInt(lastQuestion.question_no) + 1; // แปลงเป็นตัวเลข +1
+    }
+
+    console.log(`✅ กำหนดค่า question_no เป็น ${qno}`);
+
+    // ✅ แปลงค่า `qno` เป็น String ก่อนบันทึก
+    const qnoString = qno.toString();
+
+    // ✅ สร้างคำถามใหม่
+    const newQuestionRef = questionRef.doc(qnoString);
+    await newQuestionRef.set({
+      question_no: qnoString,  // 🔹 บันทึก question_no เป็น String
+      question_text: newQuestionText.value,
+      question_show: true,
+    });
+
+    console.log("✅ บันทึกคำถามสำเร็จ!");
+
+    // ✅ สร้าง collection answers เปล่า ๆ
+    await newQuestionRef.collection("answers").add({ placeholder: true });
+    console.log("✅ สร้าง collection answers สำเร็จ!");
+
+    alert(`สร้างคำถามครั้งที่ ${qno} สำเร็จ!`);
+
+    // ✅ โหลดคำถามใหม่
+    fetchQuestions();
+
+    // ✅ ปิด Modal หลังจากบันทึกสำเร็จ
+    closeCreateQuestionModal();
+
+    // ✅ รีเซ็ตค่า input
+    newQuestionText.value = "";
+
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการสร้างคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถสร้างคำถามได้!");
+  }
 }
 
 
-          async function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-              const result = await auth.signInWithPopup(provider);
-              user.value = result.user;
-              userName.value = result.user.displayName;
-              userPhoto.value = result.user.photoURL;
-              await fetchClassrooms();
-            } catch (error) {
-              console.error("Google Sign-in Error:", error);
-            }
-          }
+async function fetchQuestions() {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions");
+
+  const snapshot = await questionRef.orderBy("question_no", "asc").get();
+  questions.value = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    question_no: parseInt(doc.data().question_no)  // แปลงเป็นตัวเลขเมื่อใช้งาน
+  }));
+
+  console.log("📢 คำถามที่โหลดมา:", questions.value);
+}
+
+// ✅ ฟังก์ชันลบคำถาม
+async function deleteQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  if (!confirm("คุณต้องการลบคำถามนี้ทั้งหมดหรือไม่?")) return;
+
+  try {
+    const questionRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("questions").doc(questionId);
+
+    // 🔥 ลบ sub-collection "answers"
+    const answersRef = questionRef.collection("answers");
+    await deleteCollection(answersRef);
+
+    // 🔥 ลบเอกสารของคำถามหลัก
+    await questionRef.delete();
+
+    alert("ลบคำถามทั้งหมดสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการลบคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถลบคำถามได้!");
+  }
+}
+
+// 🔥 ฟังก์ชันลบ Collection ทั้งหมดใน Firestore
+async function deleteCollection(collectionRef) {
+  const snapshot = await collectionRef.get();
+  const batch = firestore.batch();
+
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+
+// ✅ เรียก fetchQuestions() ทุกครั้งที่เข้าไปดูห้องเรียน
+watch(currentClassroomId, async (newId) => {
+  if (newId) {
+    await fetchQuestions();
+  }
+});
+
+
+function closeCreateQuestionModal() {
+  console.log("✅ ปิด Modal createQuestionModal");
+
+  const modalElement = document.getElementById("createQuestionModal");
+  if (modalElement) {
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+      modalInstance.hide();
+      console.log("✅ Modal ถูกปิดเรียบร้อย");
+    } else {
+      console.error("❌ ไม่พบ instance ของ Modal");
+    }
+  } else {
+    console.error("❌ ไม่พบ element ของ createQuestionModal");
+  }
+}
+
+async function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    const result = await auth.signInWithPopup(provider);
+    user.value = result.user;
+    userName.value = result.user.displayName;
+    userPhoto.value = result.user.photoURL;
+
+    // บันทึกข้อมูลผู้ใช้ใน Firestore
+    const userRef = firestore.collection("users").doc(user.value.uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      // ถ้ายังไม่มีข้อมูลผู้ใช้ใน Firestore ให้เพิ่มข้อมูล
+      await userRef.set({
+        name: user.value.displayName,
+        email: user.value.email,
+        photo: user.value.photoURL
+      });
+    }
+
+    // ดึงข้อมูลห้องเรียน
+    await fetchClassrooms();
+  } catch (error) {
+    console.error("Google Sign-in Error:", error);
+  }
+}
 
           async function signOut() {
             await auth.signOut();
@@ -358,24 +1328,33 @@
           }
 
           async function showQRCode(classroomId) {
-            const qrCodeElement = document.getElementById("qrcode");
-            qrCodeElement.innerHTML = "";
+  if (!classroomId || !currentClassroom.value) {
+    alert("ไม่สามารถแสดง QR Code ได้ กรุณาเลือกห้องเรียนก่อน!");
+    return;
+  }
 
-            const qrData = JSON.stringify({
-              classroomId: classroomId,
-              className: currentClassroom.value.info.name,
-              classCode: currentClassroom.value.info.code
-            });
+  const qrCodeElement = document.getElementById("qrcode");
+  qrCodeElement.innerHTML = "";
 
-            new QRCode(qrCodeElement, {
-              text: qrData,
-              width: 200,
-              height: 200,
-            });
+  const qrData = JSON.stringify({
+    classroomId: classroomId,
+    className: currentClassroom.value.info.name,
+    classCode: currentClassroom.value.info.code,
+    owner: currentClassroom.value.owner // เพิ่ม owner ของห้องเรียน
+  });
 
-            const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
-            modal.show();
-          }
+  new QRCode(qrCodeElement, {
+    text: qrData,
+    width: 200,
+    height: 200,
+    correctLevel: QRCode.CorrectLevel.H 
+  });
+
+  const modal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+  modal.show();
+  console.log(qrData);
+}
+
 
           function downloadQRCode() {
             const canvas = document.querySelector("#qrcode canvas");
@@ -392,6 +1371,7 @@
               .collection("classroom").doc(classroomId).get();
             currentClassroom.value = doc.data();
           }
+
 
           function backToHome() {
             currentClassroomId.value = null;
@@ -411,7 +1391,7 @@
 
           async function saveEdit() {
             if (!user.value || !editingClassroom.value.id) return;
-            
+
             try {
               await firestore.collection("users").doc(user.value.uid)
                 .collection("classroom").doc(editingClassroom.value.id)
@@ -422,7 +1402,7 @@
                     photo: editingClassroom.value.photo
                   }
                 });
-              
+
               editModal.value.hide();
               await fetchClassrooms();
               alert('แก้ไขห้องเรียนสำเร็จ');
@@ -439,21 +1419,239 @@
           }
 
           async function deleteClassroom() {
-            if (!user.value || !deletingClassroom.value) return;
-            
-            try {
-              await firestore.collection("users").doc(user.value.uid)
-                .collection("classroom").doc(deletingClassroom.value.id)
-                .delete();
-              
-              deleteModal.value.hide();
-              await fetchClassrooms();
-              alert('ลบห้องเรียนสำเร็จ');
-            } catch (error) {
-              console.error("Error deleting classroom:", error);
-              alert('เกิดข้อผิดพลาดในการลบห้องเรียน');
-            }
-          }
+  if (!user.value || !deletingClassroom.value) return;
+
+  try {
+    const classRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(deletingClassroom.value.id);
+
+    // 🔥 ลบ Collection "students"
+    const studentsRef = classRef.collection("students");
+    await deleteCollection(studentsRef);
+
+    // 🔥 ลบ Collection "checkin"
+    const checkinRef = classRef.collection("checkin");
+    await deleteCollection(checkinRef);
+
+    // 🔥 ลบ Collection "questions"
+    const questionsRef = classRef.collection("questions");
+    await deleteCollection(questionsRef);
+
+    // 🔥 ลบเอกสารห้องเรียนหลัก
+    await classRef.delete();
+
+    deleteModal.value.hide();
+    await fetchClassrooms();
+    alert("ลบห้องเรียนและข้อมูลทั้งหมดสำเร็จ!");
+
+  } catch (error) {
+    console.error("Error deleting classroom:", error);
+    alert("เกิดข้อผิดพลาดในการลบห้องเรียน");
+  }
+}
+
+async function deleteCollection(collectionRef) {
+  const snapshot = await collectionRef.get();
+  const batch = firestore.batch();
+
+  snapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+
+function viewAnswers(questionId) {
+  console.log("📌 กำลังดึงคำตอบของคำถาม ID:", questionId);
+
+  if (!currentClassroomId.value || !user.value) return;
+
+  selectedQuestionText.value = questions.value.find(q => q.id === questionId)?.question_text || "ไม่พบคำถาม";
+
+  const answersRef = firestore
+    .collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId)
+    .collection("answers");
+
+  // 🔥 ใช้ `onSnapshot()` เพื่ออัปเดตแบบ Real-time
+  answersRef.onSnapshot((snapshot) => {
+    answers.value = snapshot.docs
+      .filter(doc => doc.data().placeholder !== true)  // กรองคำตอบที่มี placeholder: true ออก
+      .map(doc => ({
+        id: doc.id,
+        std_name: doc.data().std_name,
+        text: doc.data().text,
+        time: doc.data().time ? (doc.data().time) : "ไม่มีข้อมูลเวลา"
+      }));
+
+    console.log("📢 อัปเดตข้อมูลคำตอบแบบเรียลไทม์:", answers.value);
+  });
+
+  // เปิด Modal แสดงคำตอบ
+  const modalElement = document.getElementById("viewAnswersModal");
+  const modalInstance = new bootstrap.Modal(modalElement);
+  modalInstance.show();
+}
+
+function formatTimestamp(timestamp) {
+  if (!timestamp || !timestamp.toDate) return "ไม่มีข้อมูลเวลา";
+  
+  const date = timestamp.toDate();
+  return date.toLocaleString("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+async function saveStudentChanges(student) {
+  if (!currentClassroomId.value || !student.id || !user.value) return;
+
+  try {
+    // ✅ ตรวจสอบว่ามีข้อมูล session เช็คชื่อปัจจุบันหรือไม่
+    const checkinRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("checkin");
+
+    const latestCheckinDoc = await checkinRef.orderBy("cno", "desc").limit(1).get();
+    
+    if (latestCheckinDoc.empty) {
+      alert("ไม่พบข้อมูลเช็คชื่อ กรุณาเปิดเช็คชื่อก่อน!");
+      return;
+    }
+
+    const lastCheckin = latestCheckinDoc.docs[0];
+    const checkinSessionId = lastCheckin.id; // ดึง ID ของ session เช็คชื่อล่าสุด
+
+    // ✅ อัปเดตข้อมูลนักเรียนใน Firestore
+    const studentRef = checkinRef.doc(checkinSessionId)
+      .collection("students").doc(student.id);
+
+    await studentRef.update({
+      std_mark: student.std_mark,  // หมายเหตุ
+      std_score: parseInt(student.std_score) || 0,  // คะแนน (แปลงเป็นตัวเลข)
+      status: student.status  // สถานะ (เช็คชื่อแล้ว/เช็คชื่อสาย)
+    });
+
+    alert("บันทึกการเปลี่ยนแปลงสำเร็จ!");
+    student.isEditing = false;  // ยกเลิกโหมดแก้ไข
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการบันทึก:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้!");
+  }
+}
+
+async function hideQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId);
+
+  try {
+    await questionRef.update({ question_show: false }); // เปลี่ยนจาก true เป็น false
+    alert("ปิดคำถามสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการปิดคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถปิดคำถามได้!");
+  }
+}
+
+async function showQuestion(questionId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const questionRef = firestore.collection("users").doc(user.value.uid)
+    .collection("classroom").doc(currentClassroomId.value)
+    .collection("questions").doc(questionId);
+
+  try {
+    await questionRef.update({ question_show: true }); // เปลี่ยนจาก false เป็น true
+    alert("เปิดคำถามสำเร็จ!");
+    await fetchQuestions(); // โหลดคำถามใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการเปิดคำถาม:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถเปิดคำถามได้!");
+  }
+}
+
+async function deleteStudent(studentId) {
+  if (!currentClassroomId.value || !user.value) return;
+
+  const confirmDelete = confirm("คุณแน่ใจหรือไม่ว่าต้องการลบนักเรียนคนนี้?");
+  if (!confirmDelete) return;
+
+  try {
+    // 🔹 1. ดึงข้อมูลนักเรียนจากห้องเรียน
+    const studentRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value)
+      .collection("students").doc(studentId);
+
+    const studentDoc = await studentRef.get();
+
+    if (!studentDoc.exists) {
+      alert("ไม่พบนักเรียนนี้ในฐานข้อมูลห้องเรียน");
+      return;
+    }
+
+    // 🔹 2. ดึงค่า `uID` จากเอกสารนักเรียน
+    const studentData = studentDoc.data();
+    const uID = studentData.uID; // UID ของนักเรียน
+
+    if (!uID) {
+      alert("ไม่พบค่า uID ของนักเรียน");
+      return;
+    }
+
+    // 🔹 3. ดึง `code` จากห้องเรียนเพื่อใช้ค้นหา `subjId`
+    const classroomRef = firestore.collection("users").doc(user.value.uid)
+      .collection("classroom").doc(currentClassroomId.value);
+
+    const classroomDoc = await classroomRef.get();
+    if (!classroomDoc.exists) {
+      alert("ไม่พบข้อมูลห้องเรียน");
+      return;
+    }
+
+    const classData = classroomDoc.data();
+    const classCode = classData.info.code; // ใช้ code เพื่อค้นหา subjId
+
+    console.log("📢 Code ที่ใช้ค้นหา subjId:", classCode);
+
+    // 🔹 4. ค้นหา `subjId` ใน `users/{uID}/subj/`
+    const subjRef = firestore.collection("users").doc(uID)
+      .collection("subj").where("code", "==", classCode);
+
+    const subjSnapshot = await subjRef.get();
+
+    if (subjSnapshot.empty) {
+      alert("ไม่พบข้อมูลวิชาของนักเรียนในฐานข้อมูลของนักเรียน");
+      return;
+    }
+
+    // 🔹 5. ลบข้อมูล `students` และ `subj`
+    const batch = firestore.batch();
+    batch.delete(studentRef); // ลบจากห้องเรียน
+
+    subjSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref); // ลบ `subj` ของนักเรียน
+    });
+
+    await batch.commit();
+
+    alert("ลบนักเรียนออกจากห้องเรียนสำเร็จ");
+    await showStudentList(); // โหลดรายชื่อนักเรียนใหม่
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการลบนักเรียน:", error);
+    alert("เกิดข้อผิดพลาด ไม่สามารถลบนักเรียนได้!");
+  }
+}
+
+
 
           onMounted(() => {
             auth.onAuthStateChanged(async (loggedUser) => {
@@ -463,10 +1661,37 @@
                 userPhoto.value = loggedUser.photoURL || "";
                 await fetchClassrooms();
               }
+              if (currentClassroomId.value) {
+              fetchCheckinSessions();
+              }
             });
           });
 
           return {
+            deleteStudent,
+            showQuestion,
+            hideQuestion,
+            editStudent,
+            saveStudentChanges,
+            showCloseCheckinModal,
+            submitCheckin,
+            fetchCheckinDetails,
+            showCheckinDetailsModal,
+            viewCheckinDetails,
+            checkinSessions,
+            showCheckinDetailsModal,
+            answers,
+            formatTimestamp,
+            viewAnswers,
+            questions,
+            deleteQuestion,
+            fetchQuestions,
+            closeCreateQuestionModal,
+            saveQuestion,
+            openCreateQuestionModal,
+            createQuestionModal,
+            newQuestionText,
+            currentClassroomId,
             user,
             userName,
             userPhoto,
@@ -492,9 +1717,18 @@
             saveEdit,
             confirmDelete,
             deleteClassroom,
+            currentClassroom,
+            students,
+            showStudents,
+            showStudentList,
+            openCheckin,
+            closeCheckin,
+            saveCheckin,
+            removeStudent,
+              
           };
         }
       }).mount("#app");
     </script>
-  </body>
+</body>
 </html>
