@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, Button, Alert, TextInput,FlatList } from "react-native";
+import { View, Text, Button, Alert, TextInput,FlatList, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { doc, collection, setDoc, getDoc, getDocs, QueryDocumentSnapshot,updateDoc,onSnapshot  } from "firebase/firestore";
 import { firestore } from "./firebaseConfig";
@@ -344,54 +344,137 @@ export default function CheckIn() {
 
   
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>เช็คอินวิชา</Text>
+    <View style={styles.container}>
+      {/* ส่วนเช็คอินวิชา */}
+      <Text style={styles.header}>เช็คอินวิชา</Text>
 
       {subject ? (
-        <View style={{ marginBottom: 15, padding: 10, borderWidth: 1, borderRadius: 5 }}>
-          <Text style={{ fontSize: 18 }}>{subjectName || subject.name} ({subject.code})</Text>
-          <Text>เช็คอินล่าสุด: {subject.checkIn ? subject.checkIn : "ยังไม่มีการเช็คอิน"}</Text>
+        <View style={styles.subjectContainer}>
+          <Text style={styles.subjectName}>{subjectName || subject.name} ({subject.code})</Text>
+          <Text style={styles.checkInText}>เช็คอินล่าสุด: {subject.checkIn ? subject.checkIn : "ยังไม่มีการเช็คอิน"}</Text>
 
           {/* ช่องกรอกโค้ดวิชา */}
           <TextInput
-            style={{
-              borderWidth: 1,
-              width: 200,
-              marginVertical: 10,
-              padding: 5,
-              borderRadius: 5,
-              textAlign: "center",
-            }}
+            style={styles.input}
             placeholder="กรอกโค้ดเช็คชื่อ"
             value={enteredCode}
             onChangeText={setEnteredCode}
           />
-          <Button title="เช็คอิน" onPress={handleCheckIn} />
+
+          {/* ปุ่มเช็คอิน */}
+          <TouchableOpacity
+            style={styles.checkInButton}
+            onPress={handleCheckIn}
+          >
+            <Text style={styles.buttonText}>เช็คอิน</Text>
+          </TouchableOpacity>
         </View>
       ) : (
-        <Text>ไม่พบข้อมูลวิชา</Text>
+        <Text style={styles.noSubjectText}>ไม่พบข้อมูลวิชา</Text>
       )}
 
-<View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>คำถามทั้งหมด</Text>
+      {/* ส่วนคำถามทั้งหมด */}
+      <Text style={styles.header}>คำถามทั้งหมด</Text>
 
       {/* แสดงลิสต์ของคำถาม */}
       {questions.length > 0 ? (
         <FlatList
           data={questions}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderQuestionItem}
         />
       ) : (
-        <Text>ไม่พบคำถาม</Text>
+        <Text style={styles.noQuestionText}>ไม่พบคำถาม</Text>
       )}
 
       {/* ปุ่มกลับไปหน้าหลัก */}
-    </View>
-
-    
-
-      <Button title="กลับหน้าหลัก" onPress={() => router.push("/add-subject")} />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.push("/add-subject")}
+      >
+        <Text style={styles.buttonText}>กลับหน้าหลัก</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  subjectContainer: {
+    padding: 15,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  subjectName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  checkInText: {
+    fontSize: 16,
+    color: '#555',
+    marginVertical: 10,
+  },
+  input: {
+    width: '100%',
+    maxWidth: 300,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    textAlign: 'center',
+  },
+  checkInButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  noSubjectText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+  },
+  noQuestionText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+  },
+  backButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+});

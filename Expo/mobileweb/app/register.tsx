@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, Alert } from "react-native";
+import { View, Text, TextInput, Button, Alert, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "./firebaseConfig"; // ตรวจสอบ path ให้ถูกต้อง
@@ -44,45 +44,30 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold" }}>สมัครบัญชีใหม่</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>สมัครบัญชีใหม่</Text>
 
+      {/* ช่องกรอกชื่อ */}
       <TextInput
-        style={{
-          borderWidth: 1,
-          width: 200,
-          marginVertical: 10,
-          padding: 10,
-          borderRadius: 5,
-        }}
+        style={styles.input}
         placeholder="กรอกชื่อ"
         placeholderTextColor="gray"
         value={name}
         onChangeText={setName}
       />
 
+      {/* ช่องกรอกอีเมล */}
       <TextInput
-        style={{
-          borderWidth: 1,
-          width: 200,
-          marginVertical: 10,
-          padding: 10,
-          borderRadius: 5,
-        }}
+        style={styles.input}
         placeholder="อีเมล"
         placeholderTextColor="gray"
         value={email}
         onChangeText={setEmail}
       />
 
+      {/* ช่องกรอกรหัสผ่าน */}
       <TextInput
-        style={{
-          borderWidth: 1,
-          width: 200,
-          marginVertical: 10,
-          padding: 10,
-          borderRadius: 5,
-        }}
+        style={styles.input}
         placeholder="รหัสผ่าน"
         secureTextEntry
         placeholderTextColor="gray"
@@ -90,22 +75,75 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
       />
 
+      {/* ช่องกรอกรหัสนักศึกษา */}
       <TextInput
-        style={{
-          borderWidth: 1,
-          width: 200,
-          marginVertical: 10,
-          padding: 10,
-          borderRadius: 5,
-        }}
+        style={styles.input}
         placeholder="กรอกรหัสนักศึกษา"
         placeholderTextColor="gray"
         value={studentId}
         onChangeText={setStudentId}
       />
 
-      <Button title="สมัครบัญชี" onPress={handleRegister} />
-      <Button title="กลับไปหน้าเข้าสู่ระบบ" onPress={() => router.replace("/login")} color="gray" />
+      {/* ปุ่มสมัครบัญชี */}
+      <TouchableOpacity
+        style={[styles.button, styles.registerButton]}
+        onPress={handleRegister}
+      >
+        <Text style={styles.buttonText}>สมัครบัญชี</Text>
+      </TouchableOpacity>
+
+      {/* ปุ่มกลับไปหน้าเข้าสู่ระบบ */}
+      <TouchableOpacity
+        style={[styles.button, styles.loginButton]}
+        onPress={() => router.replace("/login")}
+      >
+        <Text style={styles.buttonText}>กลับไปหน้าเข้าสู่ระบบ</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    color: '#333',
+  },
+  input: {
+    width: '100%',
+    maxWidth: 300,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  button: {
+    width: '100%',
+    maxWidth: 300,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  registerButton: {
+    backgroundColor: '#007bff', // ปุ่มสมัครบัญชี
+  },
+  loginButton: {
+    backgroundColor: '#6c757d', // ปุ่มกลับไปหน้าเข้าสู่ระบบ
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

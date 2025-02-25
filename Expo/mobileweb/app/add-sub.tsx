@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FlatList, Text, View, TextInput, Button, Alert, TouchableOpacity } from "react-native";
+import { FlatList, Text, View, TextInput, Button, Alert, TouchableOpacity, StyleSheet } from "react-native";
 import { firestore } from "./firebaseConfig"; // นำเข้า firestore
 import { getDocs, collection, doc, getDoc, addDoc, deleteDoc ,query,where} from "firebase/firestore"; // นำเข้า Firestore API
 import { getAuth } from "firebase/auth";
@@ -293,51 +293,159 @@ const getUserNameByEmail = async (email: string) => {
   
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold" }}>ค้นหาวิชา</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>ค้นหาวิชา</Text>
 
+      {/* ช่องกรอกรหัสวิชา */}
       <TextInput
-        style={{
-          borderWidth: 1,
-          width: 200,
-          marginVertical: 10,
-          padding: 5,
-          borderRadius: 5,
-          textAlign: "center",
-        }}
+        style={styles.input}
         placeholder="กรอกรหัสวิชา"
         value={searchCode}
         onChangeText={setSearchCode}
       />
-      <Button title="ค้นหา" onPress={searchClassrooms} />
+      
+      {/* ปุ่มค้นหา */}
+      <TouchableOpacity
+        style={[styles.button, styles.searchButton]}
+        onPress={searchClassrooms}
+      >
+        <Text style={styles.buttonText}>ค้นหา</Text>
+      </TouchableOpacity>
 
       {/* แสดงข้อมูลวิชาที่ค้นพบ */}
-      <Text style={{ fontSize: 16, marginVertical: 10 }}>วิชาที่ค้นพบ:</Text>
+      <Text style={styles.subheading}>วิชาที่ค้นพบ:</Text>
       {classrooms.length === 0 ? (
-        <Text style={{ marginVertical: 10, color: "gray" }}>ไม่มีวิชาในระบบที่ตรงกับรหัสที่กรอก</Text>
+        <Text style={styles.noResultsText}>ไม่มีวิชาในระบบที่ตรงกับรหัสที่กรอก</Text>
       ) : (
         <FlatList
           data={classrooms}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={{ marginVertical: 10, width: 250 }}>
-              <Text>{item.name} - {item.email}</Text>
+            <View style={styles.subjectItem}>
+              <Text style={styles.subjectName}>{item.name} - {item.email}</Text>
               {item.classrooms.map((classroom) => (
-                <View key={classroom.id} style={{ marginVertical: 5 }}>
+                <View key={classroom.id} style={styles.classroomItem}>
                   <Text>วิชา: {classroom.name} (รหัสวิชา: {classroom.code})</Text>
                   <Text>เจ้าของ: {classroom.ownerName}</Text>
-                  <Button
-                    title="เพิ่มวิชา"
+                  <TouchableOpacity
+                    style={styles.addButton}
                     onPress={() => addClassroomToSubj(classroom)}
-                  />
+                  >
+                    <Text style={styles.addButtonText}>เพิ่มวิชา</Text>
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
           )}
         />
       )}
-      <Button title="สแกน QR Code" onPress={() => router.push("/scan-qr")} />
-      <Button title="กลับหน้ารายวิชา" onPress={() => router.push("/add-subject")} />
+
+      {/* ปุ่มสแกน QR Code */}
+      <TouchableOpacity
+        style={[styles.button, styles.qrButton]}
+        onPress={() => router.push("/scan-qr")}
+      >
+        <Text style={styles.buttonText}>สแกน QR Code</Text>
+      </TouchableOpacity>
+
+      {/* ปุ่มกลับหน้ารายวิชา */}
+      <TouchableOpacity
+        style={[styles.button, styles.backButton]}
+        onPress={() => router.push("/add-subject")}
+      >
+        <Text style={styles.buttonText}>กลับหน้ารายวิชา</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  input: {
+    width: '100%',
+    maxWidth: 300,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginVertical: 15,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    textAlign: 'center',
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    marginVertical: 10,
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  searchButton: {
+    backgroundColor: '#007bff',
+  },
+  qrButton: {
+    backgroundColor: '#28a745',
+  },
+  backButton: {
+    backgroundColor: '#dc3545',
+  },
+  subheading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 10,
+  },
+  noResultsText: {
+    color: '#888',
+    fontSize: 16,
+  },
+  subjectItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+    width: '100%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  subjectName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  classroomItem: {
+    marginTop: 10,
+  },
+  addButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    marginTop: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+});

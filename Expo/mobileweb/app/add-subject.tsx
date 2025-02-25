@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FlatList, Text, View, TextInput, Button, Alert, TouchableOpacity } from "react-native";
+import { FlatList, Text, View, TextInput, Button, Alert, TouchableOpacity,StyleSheet } from "react-native";
 import { firestore } from "./firebaseConfig"; // นำเข้า firestore
 import { getDocs, collection, doc, getDoc, addDoc, deleteDoc ,query,where} from "firebase/firestore"; // นำเข้า Firestore API
 import { getAuth } from "firebase/auth";
@@ -279,60 +279,142 @@ const deleteClassroomFromSubj = async (userId: string, classroomId: string, owne
   
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-
+    <View style={styles.container}>
       {/* แสดงข้อมูลวิชาที่ผู้ใช้งานเพิ่มไปแล้ว */}
-      <Text style={{ fontSize: 16, marginVertical: 10 }}>วิชาเรียนของคุณ:</Text>
+      <Text style={styles.header}>วิชาเรียนของคุณ:</Text>
+
       {subjClassrooms.length === 0 ? (
-        <Text>คุณยังไม่ได้เพิ่มวิชา</Text>
+        <Text style={styles.noSubjectText}>คุณยังไม่ได้เพิ่มวิชา</Text>
       ) : (
         <FlatList
           data={subjClassrooms}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={{ marginVertical: 5 }}>
-              <Text>วิชา: {item.name} (รหัสวิชา: {item.code})</Text>
-              <Text>อาจารย์ : {ownerNames[item.owner] || "กำลังโหลด..."}</Text>
-              <Button
-  title="เช็คอิน"
-  onPress={() =>
-    router.push({
-      pathname: "/check-in",
-      params: { subjectId: item.id, subjectName: item.name },
-    })
-  }
-/>
+            <View style={styles.subjectItem}>
+              <Text style={styles.subjectText}>วิชา: {item.name} (รหัสวิชา: {item.code})</Text>
+              <Text style={styles.ownerText}>อาจารย์: {ownerNames[item.owner] || "กำลังโหลด..."}</Text>
 
+              {/* ปุ่มเช็คชื่อและตอบคำถาม */}
+              <Button
+                title="เช็คชื่อและตอบคำถาม"
+                onPress={() =>
+                  router.push({
+                    pathname: "/check-in",
+                    params: { subjectId: item.id, subjectName: item.name },
+                  })
+                }
+                color="#007bff" // ปุ่มสีฟ้า
+              />
+
+              {/* ปุ่มลบวิชา */}
               <TouchableOpacity
-  style={{
-    backgroundColor: "red", // กำหนดสีแดง
-    padding: 10,
-    marginTop: 5,
-    borderRadius: 5,
-  }}
-  
-  onPress={async() => {
-    const currentUser = await getCurrentUser(); // รับข้อมูลผู้ใช้งานที่กำลังล็อกอิน
-    if (currentUser) {
-      console.log("🟢 Checking classroomId before deleting:", item.classroomId);
-      deleteClassroomFromSubj(currentUser.id, item.classroomId, item.owner, item.id); // ส่ง classroomId ไป
-    } else {
-      Alert.alert("ผู้ใช้งานไม่ได้ล็อกอิน");
-    }
-  }}
->
-  <Text style={{ color: "white" , margin:"auto"}}>ลบวิชา</Text>
-</TouchableOpacity>
+                style={styles.deleteButton}
+                onPress={async () => {
+                  const currentUser = await getCurrentUser(); // รับข้อมูลผู้ใช้งานที่กำลังล็อกอิน
+                  if (currentUser) {
+                    console.log("🟢 Checking classroomId before deleting:", item.classroomId);
+                    deleteClassroomFromSubj(currentUser.id, item.classroomId, item.owner, item.id); // ส่ง classroomId ไป
+                  } else {
+                    Alert.alert("ผู้ใช้งานไม่ได้ล็อกอิน");
+                  }
+                }}
+              >
+                <Text style={styles.deleteButtonText}>ลบวิชา</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
       )}
 
-      <Button title="เพิ่มวิชาเรียน" onPress={() => router.push("/add-sub")} />
-      <Text>
-        
-      </Text>
-      <Button title="กลับหน้าหลัก" onPress={() => router.push("/")} />
+      {/* ปุ่มเพิ่มวิชาเรียน */}
+      <TouchableOpacity
+        style={[styles.button, styles.addSubjectButton]}
+        onPress={() => router.push("/add-sub")}
+      >
+        <Text style={styles.buttonText}>เพิ่มวิชาเรียน</Text>
+      </TouchableOpacity>
+
+      {/* ปุ่มกลับหน้าหลัก */}
+      <TouchableOpacity
+        style={[styles.button, styles.backButton]}
+        onPress={() => router.push("/")}
+      >
+        <Text style={styles.buttonText}>กลับหน้าหลัก</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  noSubjectText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  subjectItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+    width: '100%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  subjectText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  ownerText: {
+    fontSize: 14,
+    color: '#555',
+    marginVertical: 5,
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    marginVertical: 10,
+    width: '50%',
+    maxWidth: 300,
+    alignItems: 'center',
+  },
+  addSubjectButton: {
+    backgroundColor: '#007bff',
+  },
+  backButton: {
+    backgroundColor: '#28a745',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
