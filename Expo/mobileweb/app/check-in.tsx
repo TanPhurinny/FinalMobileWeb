@@ -457,6 +457,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    alignSelf: 'center',
   },
   noSubjectText: {
     fontSize: 16,
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: '100%',
     maxWidth: 300,
-    alignItems: 'center',
+    alignSelf: 'center',
     marginVertical: 10,
-  },
+  }
 });
